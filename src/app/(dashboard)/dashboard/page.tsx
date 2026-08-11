@@ -148,8 +148,8 @@ export default async function DashboardPage() {
                   </Button>
                 </CardAction>
               </CardHeader>
-              <CardContent>
-                <CheckinSparkline data={trends.checkins} />
+              <CardContent className="flex-1">
+                <CheckinSparkline data={trends.checkins} className="h-full" />
               </CardContent>
             </Card>
           ) : null}

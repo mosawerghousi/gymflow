@@ -1,18 +1,16 @@
-import { chromium } from "@playwright/test";
+import { chromium, type Page } from "@playwright/test";
 
 /**
  * Captures the README screenshots against a running deployment.
  *
  *   pnpm tsx scripts/screenshots.ts https://gymflow-beryl.vercel.app
  */
-const SHOTS = [
-  { path: "/login", name: "login", auth: false },
-  { path: "/dashboard", name: "dashboard", auth: true },
-  { path: "/checkin", name: "checkin", auth: true },
-  { path: "/members", name: "members", auth: true },
-  { path: "/schedule", name: "schedule", auth: true },
-  { path: "/reports", name: "reports", auth: true },
-];
+const AUTHED = ["dashboard", "checkin", "members", "schedule", "reports", "settings", "styleguide"];
+
+async function settle(page: Page, ms = 1600) {
+  await page.waitForLoadState("networkidle").catch(() => {});
+  await page.waitForTimeout(ms);
+}
 
 async function main() {
   const baseURL = process.argv[2] ?? "http://localhost:3111";
@@ -28,34 +26,55 @@ async function main() {
   const page = await context.newPage();
 
   await page.goto("/login");
-  await page.waitForTimeout(600);
+  await settle(page, 800);
   await page.screenshot({ path: "docs/screenshots/login.png" });
 
   await page.getByRole("button", { name: "Login as Admin" }).click();
   await page.waitForURL(/\/dashboard/, { timeout: 30_000 });
 
-  for (const shot of SHOTS.filter((s) => s.auth)) {
-    await page.goto(shot.path);
-    await page.waitForLoadState("networkidle").catch(() => {});
-    await page.waitForTimeout(1800);
-    await page.screenshot({ path: `docs/screenshots/${shot.name}.png` });
-    console.log("captured", shot.name);
+  for (const name of AUTHED) {
+    await page.goto(`/${name}`);
+    await settle(page);
+    await page.screenshot({ path: `docs/screenshots/${name}.png` });
+    console.log("captured", name);
   }
 
-  // The reports heatmap sits behind a tab.
+  // The heatmap sits on the Traffic tab, which is the default — capture the
+  // busiest-hours card on its own for the README.
   await page.goto("/reports");
-  await page.waitForTimeout(1200);
-  await page.getByRole("tab", { name: "Busiest hours" }).click();
-  await page.waitForTimeout(1500);
+  await settle(page);
   await page.screenshot({ path: "docs/screenshots/reports-heatmap.png" });
 
+  // A member profile, for the tabbed identity header.
+  await page.goto("/members");
+  await settle(page);
+  await page.locator("table tbody tr a").first().click();
+  await page.waitForURL(/\/members\/[0-9a-f-]{36}/);
+  await settle(page);
+  await page.screenshot({ path: "docs/screenshots/member-profile.png" });
+
+  // Light mode, so the README shows the theme is real.
+  const lightContext = await browser.newContext({
+    baseURL,
+    viewport: { width: 1440, height: 900 },
+    deviceScaleFactor: 2,
+    storageState: await context.storageState(),
+  });
+  await lightContext.addInitScript(() => window.localStorage.setItem("theme", "light"));
+
+  const lightPage = await lightContext.newPage();
+  await lightPage.goto("/dashboard");
+  await settle(lightPage);
+  await lightPage.screenshot({ path: "docs/screenshots/dashboard-light.png" });
+  console.log("captured dashboard-light");
+
   // The kiosk, already paired with the seeded device token.
-  await context.addInitScript(
-    () => window.localStorage.setItem("gymflow.kiosk.token", "gfk_demo_front_door_kiosk"),
+  await context.addInitScript(() =>
+    window.localStorage.setItem("gymflow.kiosk.token", "gfk_demo_front_door_kiosk"),
   );
   const kiosk = await context.newPage();
   await kiosk.goto("/kiosk");
-  await kiosk.waitForTimeout(1200);
+  await settle(kiosk, 1200);
   await kiosk.screenshot({ path: "docs/screenshots/kiosk.png" });
 
   console.log("done");

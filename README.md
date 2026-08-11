@@ -5,7 +5,7 @@
 **Gym management for owners, front-desk staff, and trainers.**
 Members and check-ins · staff scheduling · reports that actually mean something.
 
-[**▶ Open the live demo**](https://gymflow-beryl.vercel.app) · [Architecture](ARCHITECTURE.md) · [Kiosk mode](https://gymflow-beryl.vercel.app/kiosk)
+[**▶ Open the live demo**](https://gymflow-beryl.vercel.app) · [Architecture](ARCHITECTURE.md) · [Design system](DESIGN.md) · [Kiosk mode](https://gymflow-beryl.vercel.app/kiosk)
 
 </div>
 
@@ -40,43 +40,54 @@ a few destructive actions are blocked for demo accounts — see
 
 <div align="center">
 
-<img src="docs/screenshots/login.png" alt="Login page with the demo credentials card" width="820" />
+<img src="docs/screenshots/dashboard.png" alt="Dashboard with the live occupancy hero metric" width="860" />
 
-*Login — the demo card puts all three roles one click away.*
-
-<br />
-
-<img src="docs/screenshots/dashboard.png" alt="Dashboard showing live occupancy, membership and upcoming roster" width="820" />
-
-*Dashboard — who is in the gym right now, membership health, the week ahead.*
+*Dashboard — the live occupancy counter is the one accent-coloured figure on the screen. Everything else is quiet until you need it.*
 
 <br />
 
-<img src="docs/screenshots/checkin.png" alt="Check-in desk with rapid search" width="820" />
+<img src="docs/screenshots/checkin.png" alt="Check-in desk" width="860" />
 
-*Check-in desk — type, arrow down, hit Enter. Expired and frozen memberships are refused with a reason.*
-
-<br />
-
-<img src="docs/screenshots/reports-heatmap.png" alt="Busiest-hours heatmap" width="820" />
-
-*Reports — a busiest-hours heatmap, aggregated entirely in SQL.*
+*Check-in desk — keyboard-first. Type, arrow, Enter. Success sweeps green; blocked entries say exactly why.*
 
 <br />
 
-<img src="docs/screenshots/schedule.png" alt="Weekly schedule grid" width="820" />
+<img src="docs/screenshots/reports.png" alt="Reports with the busiest-hours heatmap" width="860" />
 
-*Schedule — drag out a shift, approve a swap, book a trainer. Overlaps are impossible.*
+*Reports — every chart leads with a one-line finding, under a sticky global date range.*
 
 <br />
 
-<img src="docs/screenshots/kiosk.png" alt="Fullscreen kiosk check-in" width="620" />
+<img src="docs/screenshots/schedule.png" alt="Weekly schedule grid" width="860" />
 
-*Kiosk — unattended self-service, authenticated by a device token rather than a session.*
+*Schedule — drag out a shift, approve a swap, book a trainer. A current-time line tracks the day.*
+
+<br />
+
+<img src="docs/screenshots/member-profile.png" alt="Member profile" width="860" />
+
+*Member profile — identity header, then tabs. Never a wall of fields.*
+
+<br />
+
+<img src="docs/screenshots/login.png" alt="Login page with the demo card" width="860" />
+
+*Login — the demo card is the front door: three roles, one click each.*
+
+<br />
+
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/kiosk.png" alt="Fullscreen kiosk" /></td>
+<td width="50%"><img src="docs/screenshots/dashboard-light.png" alt="Dashboard in light mode" /></td>
+</tr>
+<tr>
+<td align="center"><em>Kiosk — sized to read from across the room.</em></td>
+<td align="center"><em>Light mode, derived from the same tokens.</em></td>
+</tr>
+</table>
 
 </div>
-
----
 
 ## What it does
 
@@ -113,6 +124,13 @@ a few destructive actions are blocked for demo accounts — see
 ### Settings
 - Plans CRUD, opening hours, kiosk device tokens, staff invites
 
+### Interface
+- Dark-mode-first design system with a light theme derived from the same tokens
+- **⌘K command palette** — jump to any screen or find a member by name, code, email or phone
+- One shared form per entity, used for both create and edit — no duplicated dialogs
+- Designed empty, loading and error states on every screen; charts carry table fallbacks
+- Live style guide at `/styleguide`, documented in **[DESIGN.md](DESIGN.md)**
+
 ---
 
 ## Stack
@@ -129,9 +147,12 @@ a few destructive actions are blocked for demo accounts — see
 | Validation | Zod (schemas shared by the API and the client) |
 | Hosting | Vercel (free tier), CI/CD on push to `main` |
 | Tests | Vitest (use cases) + Playwright (end-to-end) |
+| Design | Token-based system, dark-first, one accent — see [DESIGN.md](DESIGN.md) |
 
-**Design language:** deep slate surfaces, one strong primary (emerald `#10B981`)
-used consistently, Inter via `next/font`, dark-mode-first.
+**Design language:** near-black slate in three elevation steps, one rationed
+accent (emerald), a semantic trio mapped onto the domain, a strict 12/14/16/20/
+24/32 type scale, and motion only where it communicates. Full rationale in
+**[DESIGN.md](DESIGN.md)**.
 
 ---
 
@@ -239,7 +260,8 @@ freeze plans, drag out shifts, approve swaps, book sessions, export CSVs.
 | Unit tests | 46 passing |
 | End-to-end tests (against production) | 25 passing |
 | Lighthouse — performance, desktop | **100** on every page |
-| Lighthouse — accessibility / best practices | **100 / 100** on every page |
+| Lighthouse — accessibility | **96–100** on every page |
+| Lighthouse — best practices | **100** on every page |
 | All three demo roles on the live URL | ✅ |
 | Check-in, shift creation, every report | ✅ |
 | Nightly demo reset | ✅ verified end to end |

@@ -21,8 +21,9 @@ export function CheckinSparkline({
   const total = data.reduce((sum, point) => sum + point.count, 0);
 
   return (
-    <div className={cn("relative", className)}>
-      <div className="h-24" aria-hidden>
+    <div className={cn("relative flex flex-col", className)}>
+      {/* Grows to fill its card so the row does not end in dead space. */}
+      <div className="h-full min-h-28 flex-1" aria-hidden>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
             <defs>
