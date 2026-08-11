@@ -210,7 +210,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
             <Skeleton className="h-[32rem] w-full" />
           ) : (
             <div className="overflow-x-auto">
-              <div className="min-w-[56rem]">
+              <div className="min-w-[72rem]">
                 {/* Day header */}
                 <div className="grid grid-cols-[4rem_repeat(7,minmax(0,1fr))] border-b border-border">
                   <div />
@@ -344,16 +344,16 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                                     width: `calc(${100 / lanes}% - 4px)`,
                                   }}
                                   className={cn(
-                                    "pointer-events-auto absolute overflow-hidden rounded-md border px-1 py-0.5 text-left text-[11px] leading-tight transition-opacity hover:opacity-90",
+                                    "pointer-events-auto absolute flex flex-col items-start justify-start overflow-hidden rounded-md border px-1 py-0.5 text-left text-[11px] leading-tight transition-opacity hover:opacity-90",
                                     POSITION_COLORS[shift.position] ?? "bg-muted",
                                     shift.status === "cancelled" && "opacity-40 line-through",
                                   )}
                                 >
-                                  <span className="block truncate font-semibold">
-                                    {shift.userName}
+                                  <span className="block w-full truncate font-semibold">
+                                    {lanes >= 3 ? shift.userName.split(" ")[0] : shift.userName}
                                   </span>
                                   {lanes < 3 ? (
-                                    <span className="block truncate">
+                                    <span className="block w-full truncate">
                                       {formatTime(shift.startsAt)}–{formatTime(shift.endsAt)}
                                     </span>
                                   ) : null}
