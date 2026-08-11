@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 64" width="300" height="64" role="img" aria-label="GymFlow">
+  <title>GymFlow</title>
+  <defs>
+    <linearGradient id="gf-logo-grad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#34D399" />
+      <stop offset="1" stop-color="#10B981" />
+    </linearGradient>
+    <style>
+      .gf-wordmark { fill: #F8FAFC; }
+    </style>
+  </defs>
+
+  <g>
+    <!-- Left weight plates -->
+    <rect x="4" y="20" width="7" height="24" rx="3.5" fill="url(#gf-logo-grad)" />
+    <rect x="13" y="14" width="9" height="36" rx="4.5" fill="url(#gf-logo-grad)" />
+
+    <!-- Right weight plates -->
+    <rect x="53" y="20" width="7" height="24" rx="3.5" fill="url(#gf-logo-grad)" />
+    <rect x="42" y="14" width="9" height="36" rx="4.5" fill="url(#gf-logo-grad)" />
+
+    <!-- Bar flowing into a pulse / wave line -->
+    <path
+      d="M22 32 H27 L30.5 22.5 L35 41.5 L38.5 32 H42"
+      fill="none"
+      stroke="url(#gf-logo-grad)"
+      stroke-width="5"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </g>
+
+  <text
+    x="76"
+    y="43"
+    font-family="Inter, 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif"
+    font-size="34"
+    font-weight="700"
+    letter-spacing="-1.1"
+  >
+    <tspan class="gf-wordmark">Gym</tspan><tspan fill="#10B981">Flow</tspan>
+  </text>
+</svg>
