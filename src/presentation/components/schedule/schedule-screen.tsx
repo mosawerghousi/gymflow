@@ -4,18 +4,22 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeftRight,
   CalendarDays,
+  CalendarPlus,
   ChevronLeft,
   ChevronRight,
   Download,
-  Loader2,
-  Plus,
   Repeat,
   Trash2,
+  UserPlus,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { SHIFT_POSITIONS, SHIFT_POSITION_LABELS } from "@/domain/entities/shift";
-import { SessionStatusBadge } from "@/presentation/components/shared/status-badge";
+import { SessionForm } from "@/presentation/components/forms/session-form";
+import { ShiftForm } from "@/presentation/components/forms/shift-form";
+import { MemberAvatar } from "@/presentation/components/shared/member-avatar";
+import { EmptyState, ErrorState } from "@/presentation/components/shared/states";
+import { SessionStatus } from "@/presentation/components/shared/status-badge";
 import { Button } from "@/presentation/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/presentation/components/ui/card";
 import {
@@ -26,7 +30,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/presentation/components/ui/dialog";
-import { Label } from "@/presentation/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -35,12 +38,10 @@ import {
   SelectValue,
 } from "@/presentation/components/ui/select";
 import { Skeleton } from "@/presentation/components/ui/skeleton";
-import { Textarea } from "@/presentation/components/ui/textarea";
 import { cn } from "@/presentation/lib/utils";
 import { apiErrorMessage } from "@/presentation/store/api/base-api";
 import {
   useCancelShiftMutation,
-  useCreateShiftMutation,
   useGetScheduleQuery,
   useRequestSwapMutation,
   useResolveSwapMutation,
@@ -59,18 +60,20 @@ import {
   weekShifted,
 } from "@/presentation/store/schedule-slice";
 
-/** The grid renders one row per hour in this window. */
 const DAY_START_HOUR = 6;
 const DAY_END_HOUR = 22;
 const HOURS = Array.from({ length: DAY_END_HOUR - DAY_START_HOUR }, (_, i) => DAY_START_HOUR + i);
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+/** Generous rows — a 44px grid row is unreadable once two people overlap. */
+const ROW_HEIGHT = 56;
 
-const POSITION_COLORS: Record<string, string> = {
-  front_desk: "bg-primary/18 border-primary/40 text-primary",
-  floor: "bg-sky-500/18 border-sky-500/40 text-sky-300",
-  training: "bg-violet-500/18 border-violet-500/40 text-violet-300",
-  cleaning: "bg-amber-500/18 border-amber-500/40 text-amber-300",
-  management: "bg-rose-500/18 border-rose-500/40 text-rose-300",
+/** Muted fills, colour-coded by role; the accent arrives on hover. */
+const POSITION_STYLES: Record<string, string> = {
+  front_desk: "bg-chart-1/12 border-chart-1/35 text-chart-1 hover:border-primary",
+  floor: "bg-chart-2/14 border-chart-2/35 text-chart-2 hover:border-primary",
+  training: "bg-warning/12 border-warning/35 text-warning hover:border-primary",
+  cleaning: "bg-surface-3 border-border-strong text-muted-foreground hover:border-primary",
+  management: "bg-danger/10 border-danger/30 text-danger hover:border-primary",
 };
 
 export interface ScheduleScreenProps {
@@ -82,19 +85,19 @@ export interface ScheduleScreenProps {
 }
 
 /**
- * Weekly calendar grid.
+ * The weekly roster.
  *
- * Admins drag across an empty column to rough out a shift; the drag itself is
- * tracked in `scheduleSlice` and only becomes a request once the dialog is
- * confirmed. Overlaps are refused by the server and surfaced inline.
+ * Admins drag down an empty column to rough out a shift — the drag paints a
+ * ghost block and changes the cursor so it feels physical — and the shared
+ * ShiftForm opens pre-filled with what they drew. Conflicts come back from the
+ * server and are shown inline, in red, on the block that clashes.
  */
 export function ScheduleScreen(props: ScheduleScreenProps) {
   const dispatch = useAppDispatch();
   const { weekStart, draft, isDragging, selectedShiftId, isShiftDialogOpen, mineOnly } =
     useAppSelector((state) => state.schedule);
 
-  // `weekStart` starts at a fixed epoch value so server and client render the
-  // same markup; the real week is set on mount.
+  // Seeded to a fixed epoch so server and client agree; corrected on mount.
   useEffect(() => {
     if (weekStart === "1970-01-05") {
       dispatch(jumpedToToday(new Date().toISOString()));
@@ -103,57 +106,57 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
 
   const { from, to, days } = useMemo(() => weekWindow(weekStart), [weekStart]);
 
-  const { data, isLoading } = useGetScheduleQuery({
+  const { data, isLoading, isError, refetch } = useGetScheduleQuery({
     from: from.toISOString(),
     to: to.toISOString(),
     mine: mineOnly,
   });
 
-  const [createShift, { isLoading: isCreating }] = useCreateShiftMutation();
   const [cancelShift] = useCancelShiftMutation();
   const [requestSwap] = useRequestSwapMutation();
   const [resolveSwap] = useResolveSwapMutation();
   const [updateSession] = useUpdateSessionMutation();
 
-  const [draftForm, setDraftForm] = useState({ position: "front_desk", notes: "" });
+  const [isShiftFormOpen, setShiftFormOpen] = useState(false);
+  const [isSessionFormOpen, setSessionFormOpen] = useState(false);
+  const [conflictShiftId, setConflictShiftId] = useState<string | null>(null);
 
   const selectedShift = data?.shifts.find((shift) => shift.id === selectedShiftId) ?? null;
   const staff = data?.staff ?? [];
+  const trainers = staff.filter((member) => member.role === "trainer");
 
-  async function commitDraft() {
-    if (!draft) return;
+  const nowMarker = useNowMarker(days);
+
+  /** A finished drag becomes the ShiftForm's default values. */
+  const draftDefaults = useMemo(() => {
+    if (!draft) return undefined;
 
     const day = days[draft.dayIndex];
-    if (!day) return;
+    if (!day) return undefined;
 
     const startHour = Math.min(draft.startHour, draft.endHour);
     const endHour = Math.max(draft.startHour, draft.endHour) + 1;
+    const date = day.toISOString().slice(0, 10);
 
-    try {
-      await createShift({
-        userId: draft.userId,
-        startsAt: atHour(day, startHour).toISOString(),
-        endsAt: atHour(day, endHour).toISOString(),
-        position: draftForm.position,
-        notes: draftForm.notes || null,
-      }).unwrap();
+    return {
+      userId: draft.userId,
+      startsAt: `${date}T${String(startHour).padStart(2, "0")}:00:00.000Z`,
+      endsAt: `${date}T${String(endHour).padStart(2, "0")}:00:00.000Z`,
+    };
+  }, [draft, days]);
 
-      toast.success("Shift scheduled.");
-      dispatch(shiftDialogClosed());
-      setDraftForm({ position: "front_desk", notes: "" });
-    } catch (error) {
-      toast.error(apiErrorMessage(error, "Could not create the shift."));
-    }
-  }
+  useEffect(() => {
+    if (isShiftDialogOpen && draft) setShiftFormOpen(true);
+  }, [isShiftDialogOpen, draft]);
 
   return (
-    <div className="space-y-4 px-5 py-6 sm:px-8">
+    <div className="space-y-4 px-5 pb-10 sm:px-8">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-1">
           <Button
             variant="outline"
-            size="icon"
+            size="icon-sm"
             aria-label="Previous week"
             onClick={() => dispatch(weekShifted(-1))}
           >
@@ -161,7 +164,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
           </Button>
           <Button
             variant="outline"
-            size="icon"
+            size="icon-sm"
             aria-label="Next week"
             onClick={() => dispatch(weekShifted(1))}
           >
@@ -176,63 +179,113 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
           </Button>
         </div>
 
-        <p className="text-sm font-medium tabular-nums">
+        <p data-numeric className="text-sm font-medium">
           {formatDate(days[0])} – {formatDate(days[6])}
         </p>
 
         <Button
-          variant={mineOnly ? "default" : "outline"}
+          variant={mineOnly ? "secondary" : "ghost"}
           size="sm"
           onClick={() => dispatch(mineOnlyToggled(!mineOnly))}
         >
-          <CalendarDays /> My shifts only
+          <CalendarDays /> Only mine
         </Button>
 
-        <Button asChild variant="outline" size="sm" className="ml-auto">
-          <a
-            href={`/api/export/ical?from=${from.toISOString()}&to=${to.toISOString()}${mineOnly ? "&mine=true" : ""}`}
-          >
-            <Download /> Export .ics
-          </a>
-        </Button>
+        <div className="ml-auto flex items-center gap-2">
+          <Button asChild variant="ghost" size="sm">
+            <a
+              href={`/api/export/ical?from=${from.toISOString()}&to=${to.toISOString()}${mineOnly ? "&mine=true" : ""}`}
+            >
+              <Download /> .ics
+            </a>
+          </Button>
+
+          {props.canBookSessions && trainers.length > 0 ? (
+            <Button variant="secondary" size="sm" onClick={() => setSessionFormOpen(true)}>
+              <UserPlus /> Book session
+            </Button>
+          ) : null}
+
+          {props.canManageShifts ? (
+            <Button
+              size="sm"
+              onClick={() => {
+                dispatch(shiftDialogClosed());
+                setShiftFormOpen(true);
+              }}
+            >
+              <CalendarPlus /> Add shift
+            </Button>
+          ) : null}
+        </div>
       </div>
 
-      {props.canManageShifts ? (
-        <p className="text-xs text-muted-foreground">
-          Drag down an empty column to rough out a shift, then pick who works it.
-        </p>
-      ) : null}
+      {/* Legend + drag hint */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+        {SHIFT_POSITIONS.map((position) => (
+          <span key={position} className="inline-flex items-center gap-1.5">
+            <span
+              className={cn(
+                "size-2.5 rounded-sm border",
+                POSITION_STYLES[position]?.split(" hover:")[0],
+              )}
+            />
+            {SHIFT_POSITION_LABELS[position]}
+          </span>
+        ))}
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-3 w-1 rounded-full bg-success" />
+          Trainer session
+        </span>
+        {props.canManageShifts ? (
+          <span className="ml-auto">Drag down a column to rough out a shift.</span>
+        ) : null}
+      </div>
 
       {/* Grid */}
       <Card className="overflow-hidden py-0">
-        <CardContent className="p-0">
-          {isLoading ? (
-            <Skeleton className="h-[32rem] w-full" />
+        <CardContent className="px-0">
+          {isError ? (
+            <ErrorState title="The schedule did not load" onRetry={() => void refetch()} />
+          ) : isLoading ? (
+            <div className="space-y-px p-4">
+              {Array.from({ length: 8 }).map((_, index) => (
+                <Skeleton key={index} className="h-12 w-full" />
+              ))}
+            </div>
           ) : (
             <div className="overflow-x-auto">
-              <div className="min-w-[72rem]">
+              <div className="min-w-[64rem]">
                 {/* Day header */}
-                <div className="grid grid-cols-[4rem_repeat(7,minmax(0,1fr))] border-b border-border">
+                <div className="sticky top-14 z-10 grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] border-b border-border bg-card">
                   <div />
                   {days.map((day, index) => (
                     <div
                       key={day.toISOString()}
                       className={cn(
-                        "border-l border-border px-2 py-2 text-center",
-                        isToday(day) && "bg-primary/5",
+                        "border-l border-border px-2 py-2.5 text-center",
+                        isToday(day) && "bg-brand-subtle",
                       )}
                     >
-                      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      <p className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">
                         {DAY_LABELS[index]}
                       </p>
-                      <p className="text-sm font-semibold tabular-nums">{day.getUTCDate()}</p>
+                      <p
+                        data-numeric
+                        className={cn(
+                          "text-sm font-semibold",
+                          isToday(day) && "text-primary",
+                        )}
+                      >
+                        {day.getUTCDate()}
+                      </p>
                     </div>
                   ))}
                 </div>
 
-                {/* Hour rows */}
+                {/* Hour rows + blocks */}
                 <div
-                  className="relative"
+                  className={cn("relative", isDragging && "cursor-ns-resize select-none")}
                   onMouseUp={() => {
                     if (isDragging) dispatch(dragEnded());
                   }}
@@ -243,9 +296,13 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                   {HOURS.map((hour) => (
                     <div
                       key={hour}
-                      className="grid grid-cols-[4rem_repeat(7,minmax(0,1fr))] border-b border-border last:border-0"
+                      style={{ height: ROW_HEIGHT }}
+                      className="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] border-b border-border last:border-0"
                     >
-                      <div className="px-2 py-1 text-right text-xs text-muted-foreground tabular-nums">
+                      <div
+                        data-numeric
+                        className="pt-1 pr-2 text-right text-2xs text-muted-foreground"
+                      >
                         {String(hour).padStart(2, "0")}:00
                       </div>
 
@@ -289,17 +346,19 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                                     userId: staff[0]?.id ?? props.currentUserId,
                                     dayIndex,
                                     startHour: hour,
-                                    endHour: hour + 1,
+                                    endHour: hour,
                                   }),
                                 );
                                 dispatch(dragEnded());
                               }
                             }}
                             className={cn(
-                              "min-h-11 border-l border-border transition-colors",
-                              props.canManageShifts && "cursor-pointer hover:bg-muted/40",
-                              inDraft && "bg-primary/20",
-                              isToday(day) && !inDraft && "bg-primary/[0.03]",
+                              "border-l border-border transition-colors duration-150",
+                              props.canManageShifts && "cursor-cell hover:bg-surface-2",
+                              // The ghost block the drag paints.
+                              inDraft &&
+                                "border-y border-dashed border-primary/60 bg-brand-muted",
+                              isToday(day) && !inDraft && "bg-brand-subtle/40",
                             )}
                           />
                         );
@@ -307,14 +366,39 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                     </div>
                   ))}
 
-                  {/* Shift blocks, positioned over the grid */}
-                  <div className="pointer-events-none absolute inset-0 grid grid-cols-[4rem_repeat(7,minmax(0,1fr))]">
+                  {/* Current-time indicator */}
+                  {nowMarker ? (
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute inset-x-0 z-20"
+                      style={{ top: nowMarker.top }}
+                    >
+                      <div className="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))]">
+                        <div className="flex items-center justify-end pr-1">
+                          <span
+                            data-numeric
+                            className="rounded bg-danger px-1 py-0.5 text-2xs font-medium text-danger-foreground"
+                          >
+                            {nowMarker.label}
+                          </span>
+                        </div>
+                        {days.map((day, index) => (
+                          <div key={day.toISOString()} className="relative">
+                            {index === nowMarker.dayIndex ? (
+                              <div className="absolute inset-x-0 top-0 h-px bg-danger">
+                                <span className="absolute -top-1 left-0 size-2 rounded-full bg-danger" />
+                              </div>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {/* Shift and session blocks */}
+                  <div className="pointer-events-none absolute inset-0 grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))]">
                     <div />
                     {days.map((day) => {
-                      // Shifts that run at the same time are packed into
-                      // side-by-side lanes, the way a real calendar does it —
-                      // otherwise two people on the same slot render on top of
-                      // each other and neither name is readable.
                       const dayShifts = packIntoLanes(
                         (data?.shifts ?? []).filter((shift) =>
                           sameDay(new Date(shift.startsAt), day),
@@ -325,12 +409,12 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
 
                       return (
                         <div key={day.toISOString()} className="relative">
-                          {/* Shifts occupy everything but a narrow right-hand
-                              strip, which is reserved for session markers. */}
-                          <div className="absolute inset-y-0 left-0 right-3">
+                          <div className="absolute inset-y-0 left-0 right-2.5">
                             {dayShifts.map(({ item: shift, lane, lanes }) => {
                               const geometry = blockGeometry(shift.startsAt, shift.endsAt);
                               if (!geometry) return null;
+
+                              const isConflicting = conflictShiftId === shift.id;
 
                               return (
                                 <button
@@ -344,23 +428,27 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                                     width: `calc(${100 / lanes}% - 4px)`,
                                   }}
                                   className={cn(
-                                    "pointer-events-auto absolute flex flex-col items-start justify-start overflow-hidden rounded-md border px-1 py-0.5 text-left text-[11px] leading-tight transition-opacity hover:opacity-90",
-                                    POSITION_COLORS[shift.position] ?? "bg-muted",
+                                    "pointer-events-auto absolute flex flex-col items-start justify-start overflow-hidden rounded-md border px-1.5 py-1 text-left text-2xs leading-tight",
+                                    "transition-[border-color,background-color] duration-150",
+                                    POSITION_STYLES[shift.position] ?? "bg-surface-3 border-border",
                                     shift.status === "cancelled" && "opacity-40 line-through",
+                                    isConflicting && "border-danger bg-danger-subtle text-danger",
                                   )}
                                 >
                                   <span className="block w-full truncate font-semibold">
-                                    {lanes >= 3 ? shift.userName.split(" ")[0] : shift.userName}
+                                    {lanes >= 3
+                                      ? (shift.userName.split(" ")[0] ?? shift.userName)
+                                      : shift.userName}
                                   </span>
                                   {lanes < 3 ? (
-                                    <span className="block w-full truncate">
+                                    <span data-numeric className="block w-full truncate opacity-90">
                                       {formatTime(shift.startsAt)}–{formatTime(shift.endsAt)}
                                     </span>
                                   ) : null}
                                   {shift.swapStatus === "pending" ? (
                                     <span className="mt-0.5 flex items-center gap-0.5">
                                       <Repeat className="size-2.5" />
-                                      {lanes < 3 ? "swap" : null}
+                                      {lanes < 3 ? "cover" : null}
                                     </span>
                                   ) : null}
                                 </button>
@@ -380,8 +468,9 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                                   style={geometry}
                                   title={`PT: ${session.memberName} with ${session.trainerName} · ${formatTime(session.startsAt)}`}
                                   className={cn(
-                                    "pointer-events-auto absolute right-0.5 w-2 rounded-full border border-emerald-300/60 bg-emerald-400/70",
-                                    session.status === "cancelled" && "opacity-30",
+                                    "pointer-events-auto absolute right-0.5 w-1.5 rounded-full bg-success",
+                                    session.status === "cancelled" && "opacity-25",
+                                    session.status === "no_show" && "bg-danger",
                                   )}
                                 />
                               );
@@ -398,28 +487,41 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        {/* Sessions this week */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Trainer sessions this week</CardTitle>
+            <CardTitle>Trainer sessions</CardTitle>
+            <p className="text-sm text-muted-foreground">Booked this week.</p>
           </CardHeader>
           <CardContent className="max-h-80 overflow-y-auto">
             {!data || data.sessions.length === 0 ? (
-              <p className="py-3 text-sm text-muted-foreground">No sessions booked.</p>
+              <EmptyState
+                compact
+                icon={UserPlus}
+                title="No sessions booked"
+                description="Book one against a trainer's rostered hours."
+                action={
+                  props.canBookSessions && trainers.length > 0 ? (
+                    <Button size="sm" variant="secondary" onClick={() => setSessionFormOpen(true)}>
+                      <UserPlus /> Book session
+                    </Button>
+                  ) : undefined
+                }
+              />
             ) : (
               <ul className="divide-y divide-border">
                 {data.sessions.map((session) => (
-                  <li key={session.id} className="flex items-center gap-3 py-2.5">
+                  <li key={session.id} className="group/row flex items-center gap-2.5 py-2.5">
+                    <MemberAvatar name={session.memberName} size="sm" />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{session.memberName}</p>
-                      <p className="truncate text-xs text-muted-foreground tabular-nums">
+                      <p className="truncate text-sm">{session.memberName}</p>
+                      <p data-numeric className="truncate text-xs text-muted-foreground">
                         {formatDayTime(session.startsAt)} · {session.trainerName}
                       </p>
                     </div>
-                    <SessionStatusBadge status={session.status} />
+                    <SessionStatus status={session.status} />
                     {session.status === "booked" &&
                     (props.canBookSessions || session.trainerId === props.currentUserId) ? (
-                      <div className="flex shrink-0 gap-1">
+                      <div className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover/row:opacity-100 group-focus-within/row:opacity-100">
                         <Button
                           size="sm"
                           variant="ghost"
@@ -429,7 +531,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                                 sessionId: session.id,
                                 status: "completed",
                               }).unwrap();
-                              toast.success("Session marked completed.");
+                              toast.success("Marked completed.");
                             } catch (error) {
                               toast.error(apiErrorMessage(error, "Could not update."));
                             }
@@ -463,27 +565,38 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
           </CardContent>
         </Card>
 
-        {/* Swap requests */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Pending swap requests</CardTitle>
+            <CardTitle>Cover requests</CardTitle>
+            <p className="text-sm text-muted-foreground">Shifts waiting on a swap.</p>
           </CardHeader>
           <CardContent className="max-h-80 overflow-y-auto">
             {!data || data.swapRequests.length === 0 ? (
-              <p className="py-3 text-sm text-muted-foreground">Nothing waiting for cover.</p>
+              <EmptyState
+                compact
+                icon={ArrowLeftRight}
+                title="Nothing waiting"
+                description="Swap requests from staff land here."
+              />
             ) : (
               <ul className="divide-y divide-border">
                 {data.swapRequests.map((request) => (
-                  <li key={request.id} className="space-y-2 py-3">
-                    <div>
-                      <p className="text-sm">
-                        <span className="font-medium">{request.requestedByName}</span> needs cover
-                      </p>
-                      <p className="text-xs text-muted-foreground tabular-nums">
-                        {formatDayTime(request.shiftStartsAt)} –{" "}
-                        {formatTime(request.shiftEndsAt)}
-                        {request.reason ? ` · ${request.reason}` : ""}
-                      </p>
+                  <li key={request.id} className="space-y-2.5 py-3">
+                    <div className="flex items-start gap-2.5">
+                      <MemberAvatar name={request.requestedByName} size="sm" />
+                      <div className="min-w-0">
+                        <p className="text-sm">
+                          <span className="font-medium">{request.requestedByName}</span> needs
+                          cover
+                        </p>
+                        <p data-numeric className="text-xs text-muted-foreground">
+                          {formatDayTime(request.shiftStartsAt)} –{" "}
+                          {formatTime(request.shiftEndsAt)}
+                        </p>
+                        {request.reason ? (
+                          <p className="mt-1 text-xs text-muted-foreground">{request.reason}</p>
+                        ) : null}
+                      </div>
                     </div>
 
                     {props.canResolveSwaps ? (
@@ -498,6 +611,8 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                             }).unwrap();
                             toast.success("Swap approved and the shift reassigned.");
                           } catch (error) {
+                            setConflictShiftId(request.shiftId);
+                            setTimeout(() => setConflictShiftId(null), 4000);
                             toast.error(apiErrorMessage(error, "Could not approve the swap."));
                           }
                         }}
@@ -540,90 +655,28 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
         </Card>
       </div>
 
-      {/* Create-from-drag dialog */}
-      <Dialog
-        open={isShiftDialogOpen && draft !== null}
+      {/* The shared ShiftForm — create mode, pre-filled from the drag. */}
+      <ShiftForm
+        mode="create"
+        open={isShiftFormOpen}
+        staff={staff}
+        defaultValues={draftDefaults}
         onOpenChange={(open) => {
+          setShiftFormOpen(open);
           if (!open) dispatch(shiftDialogClosed());
         }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>New shift</DialogTitle>
-            <DialogDescription>
-              {draft
-                ? `${DAY_LABELS[draft.dayIndex]} ${String(Math.min(draft.startHour, draft.endHour)).padStart(2, "0")}:00 – ${String(Math.max(draft.startHour, draft.endHour) + 1).padStart(2, "0")}:00`
-                : ""}
-            </DialogDescription>
-          </DialogHeader>
+      />
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Who is working</Label>
-              <Select
-                value={draft?.userId ?? ""}
-                onValueChange={(value) =>
-                  draft && dispatch(dragStarted({ ...draft, userId: value }))
-                }
-              >
-                <SelectTrigger className="w-full" aria-label="Who is working this shift">
-                  <SelectValue placeholder="Pick a staff member" />
-                </SelectTrigger>
-                <SelectContent>
-                  {staff.map((member) => (
-                    <SelectItem key={member.id} value={member.id}>
-                      {member.name} ({member.role})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+      <SessionForm
+        mode="create"
+        open={isSessionFormOpen}
+        trainers={trainers}
+        onOpenChange={setSessionFormOpen}
+      />
 
-            <div className="space-y-2">
-              <Label>Position</Label>
-              <Select
-                value={draftForm.position}
-                onValueChange={(value) => setDraftForm({ ...draftForm, position: value })}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SHIFT_POSITIONS.map((position) => (
-                    <SelectItem key={position} value={position}>
-                      {SHIFT_POSITION_LABELS[position]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="shift-notes">Notes</Label>
-              <Textarea
-                id="shift-notes"
-                rows={2}
-                value={draftForm.notes}
-                onChange={(event) => setDraftForm({ ...draftForm, notes: event.target.value })}
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => dispatch(shiftDialogClosed())}>
-              Cancel
-            </Button>
-            <Button onClick={() => void commitDraft()} disabled={isCreating}>
-              {isCreating ? <Loader2 className="animate-spin" /> : <Plus />}
-              Create shift
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Existing-shift dialog */}
+      {/* Existing shift */}
       <Dialog
-        open={isShiftDialogOpen && selectedShift !== null}
+        open={selectedShift !== null && !isShiftFormOpen}
         onOpenChange={(open) => {
           if (!open) dispatch(shiftDialogClosed());
         }}
@@ -632,8 +685,11 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
           {selectedShift ? (
             <>
               <DialogHeader>
-                <DialogTitle>{selectedShift.userName}</DialogTitle>
-                <DialogDescription>
+                <DialogTitle className="flex items-center gap-2.5">
+                  <MemberAvatar name={selectedShift.userName} size="sm" />
+                  {selectedShift.userName}
+                </DialogTitle>
+                <DialogDescription data-numeric>
                   {formatDayTime(selectedShift.startsAt)} – {formatTime(selectedShift.endsAt)} ·{" "}
                   {SHIFT_POSITION_LABELS[selectedShift.position]} · {selectedShift.hours}h
                 </DialogDescription>
@@ -643,28 +699,11 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                 <p className="text-sm text-muted-foreground">{selectedShift.notes}</p>
               ) : null}
 
-              <DialogFooter className="flex-col gap-2 sm:flex-row">
-                {props.canRequestSwap && selectedShift.userId === props.currentUserId ? (
-                  <Button
-                    variant="outline"
-                    onClick={async () => {
-                      try {
-                        await requestSwap({ shiftId: selectedShift.id }).unwrap();
-                        toast.success("Swap requested — an admin will find cover.");
-                        dispatch(shiftDialogClosed());
-                      } catch (error) {
-                        toast.error(apiErrorMessage(error, "Could not request a swap."));
-                      }
-                    }}
-                  >
-                    <ArrowLeftRight /> Request swap
-                  </Button>
-                ) : null}
-
+              <DialogFooter className="sm:justify-between">
                 {props.canManageShifts && selectedShift.status !== "cancelled" ? (
                   <Button
-                    variant="ghost"
-                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    variant="destructive-ghost"
+                    size="sm"
                     onClick={async () => {
                       try {
                         await cancelShift({ shiftId: selectedShift.id }).unwrap();
@@ -676,6 +715,24 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                     }}
                   >
                     <Trash2 /> Cancel shift
+                  </Button>
+                ) : (
+                  <span />
+                )}
+
+                {props.canRequestSwap && selectedShift.userId === props.currentUserId ? (
+                  <Button
+                    onClick={async () => {
+                      try {
+                        await requestSwap({ shiftId: selectedShift.id }).unwrap();
+                        toast.success("Cover requested — an admin will find someone.");
+                        dispatch(shiftDialogClosed());
+                      } catch (error) {
+                        toast.error(apiErrorMessage(error, "Could not request a swap."));
+                      }
+                    }}
+                  >
+                    <ArrowLeftRight /> Request cover
                   </Button>
                 ) : null}
               </DialogFooter>
@@ -699,9 +756,9 @@ function SwapResolver({
   const [coverUserId, setCoverUserId] = useState("");
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2 pl-10">
       <Select value={coverUserId} onValueChange={setCoverUserId}>
-        <SelectTrigger className="h-8 w-44 text-xs" aria-label="Choose who covers this shift">
+        <SelectTrigger className="h-8 w-40 text-xs" aria-label="Choose who covers this shift">
           <SelectValue placeholder="Choose cover" />
         </SelectTrigger>
         <SelectContent>
@@ -723,48 +780,47 @@ function SwapResolver({
   );
 }
 
-/* ---------------------------------------------------------------------- */
-/* Date helpers — all UTC, matching what the API returns                   */
-/* ---------------------------------------------------------------------- */
+/** Positions the "now" line, if the current instant falls inside this week. */
+function useNowMarker(days: Date[]) {
+  const [now, setNow] = useState<Date | null>(null);
 
-function weekWindow(weekStart: string) {
-  const from = new Date(`${weekStart}T00:00:00.000Z`);
-  const days = Array.from(
-    { length: 7 },
-    (_, index) => new Date(from.getTime() + index * 86_400_000),
-  );
+  useEffect(() => {
+    setNow(new Date());
+    const timer = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
 
-  return { from, to: new Date(from.getTime() + 7 * 86_400_000), days };
-}
+  if (!now) return null;
 
-function atHour(day: Date, hour: number): Date {
-  return new Date(
-    Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), hour, 0, 0, 0),
-  );
+  const dayIndex = days.findIndex((day) => sameDay(day, now));
+  if (dayIndex === -1) return null;
+
+  const hour = now.getUTCHours() + now.getUTCMinutes() / 60;
+  if (hour < DAY_START_HOUR || hour > DAY_END_HOUR) return null;
+
+  return {
+    dayIndex,
+    top: (hour - DAY_START_HOUR) * ROW_HEIGHT,
+    label: now.toISOString().slice(11, 16),
+  };
 }
 
 interface Lane<T> {
   item: T;
   lane: number;
-  /** How many lanes the overlapping cluster needs, i.e. this block's width. */
   lanes: number;
 }
 
 /**
- * Packs items into side-by-side lanes.
- *
- * Items are grouped into clusters of things that actually overlap, and each
- * cluster is widened only as far as it needs to be — so a lone evening shift
- * still spans the full column even if the morning had four people on at once.
+ * Packs overlapping items into side-by-side lanes, clustering so a lone evening
+ * shift still spans the full column even if the morning had four people on.
  */
 function packIntoLanes<T>(
   items: readonly T[],
   startOf: (item: T) => number,
   endOf: (item: T) => number,
 ): Array<Lane<T>> {
-  const sorted = [...items].sort(
-    (a, b) => startOf(a) - startOf(b) || endOf(a) - endOf(b),
-  );
+  const sorted = [...items].sort((a, b) => startOf(a) - startOf(b) || endOf(a) - endOf(b));
 
   const packed: Array<Lane<T>> = [];
   let cluster: Array<Lane<T>> = [];
@@ -803,14 +859,22 @@ function packIntoLanes<T>(
   return packed;
 }
 
-/** Converts a shift's times into a percentage-based position in the grid. */
+function weekWindow(weekStart: string) {
+  const from = new Date(`${weekStart}T00:00:00.000Z`);
+  const days = Array.from(
+    { length: 7 },
+    (_, index) => new Date(from.getTime() + index * 86_400_000),
+  );
+
+  return { from, to: new Date(from.getTime() + 7 * 86_400_000), days };
+}
+
 function blockGeometry(startsAt: string, endsAt: string) {
   const start = new Date(startsAt);
   const end = new Date(endsAt);
 
   const startHour = start.getUTCHours() + start.getUTCMinutes() / 60;
   const endHour = end.getUTCHours() + end.getUTCMinutes() / 60;
-  const span = DAY_END_HOUR - DAY_START_HOUR;
 
   const clampedStart = Math.max(startHour, DAY_START_HOUR);
   const clampedEnd = Math.min(endHour <= startHour ? DAY_END_HOUR : endHour, DAY_END_HOUR);
@@ -818,8 +882,8 @@ function blockGeometry(startsAt: string, endsAt: string) {
   if (clampedEnd <= clampedStart) return null;
 
   return {
-    top: `${((clampedStart - DAY_START_HOUR) / span) * 100}%`,
-    height: `${((clampedEnd - clampedStart) / span) * 100}%`,
+    top: (clampedStart - DAY_START_HOUR) * ROW_HEIGHT,
+    height: (clampedEnd - clampedStart) * ROW_HEIGHT,
   };
 }
 
@@ -833,11 +897,7 @@ function isToday(day: Date): boolean {
 
 function formatDate(day?: Date): string {
   if (!day) return "";
-  return day.toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    timeZone: "UTC",
-  });
+  return day.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
 }
 
 function formatTime(iso: string): string {

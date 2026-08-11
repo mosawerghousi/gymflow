@@ -90,8 +90,10 @@ export function LoginForm() {
 
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-medium">Login as {account.label}</span>
+                {/* The address is shown, not just implied — the spec requires the
+                    credentials to be readable for anyone signing in manually. */}
                 <span className="block truncate text-xs text-muted-foreground">
-                  {account.blurb}
+                  <span className="font-mono">{account.email}</span> · {account.blurb}
                 </span>
               </span>
 

@@ -59,8 +59,9 @@ test.describe("GymFlow smoke", () => {
     await expect(page.getByText("Check-ins", { exact: true }).first()).toBeVisible();
 
     // The busiest-hours heatmap is the report most likely to break on empty data.
-    await page.getByRole("tab", { name: "Busiest hours" }).click();
-    await expect(page.getByText("Check-ins by hour of day")).toBeVisible({ timeout: 20_000 });
+    await page.getByRole("tab", { name: "Traffic" }).click();
+    await expect(page.getByText("Busiest hours")).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText("By hour of day")).toBeVisible();
   });
 
   test("admin: members list loads and a profile opens", async ({ page }) => {
@@ -77,7 +78,8 @@ test.describe("GymFlow smoke", () => {
 
     await page.waitForURL(/\/members\/[0-9a-f-]{36}/);
     await expect(page.getByRole("heading", { name })).toBeVisible();
-    await expect(page.getByText("Attendance — last 90 days")).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Overview" })).toBeVisible();
+    await expect(page.getByText("Attendance", { exact: true })).toBeVisible();
   });
 
   test("admin: the weekly schedule renders", async ({ page }) => {
@@ -86,12 +88,12 @@ test.describe("GymFlow smoke", () => {
     await page.getByRole("link", { name: "Schedule" }).first().click();
     await page.waitForURL(/\/schedule/);
 
-    await expect(page.getByText("Trainer sessions this week")).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText("Trainer sessions").first()).toBeVisible({ timeout: 20_000 });
 
     // The seven day columns of the weekly grid.
     await expect(page.getByText("Mon", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Sun", { exact: true }).first()).toBeVisible();
-    await expect(page.getByText("Pending swap requests")).toBeVisible();
+    await expect(page.getByText("Cover requests")).toBeVisible();
   });
 
   test("staff: sees the desk but not settings", async ({ page }) => {
