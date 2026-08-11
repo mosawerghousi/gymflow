@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 
+import { ThemeProvider } from "@/presentation/components/theme/theme-provider";
 import { Toaster } from "@/presentation/components/ui/sonner";
 
 import "./globals.css";
@@ -11,7 +12,7 @@ const inter = Inter({
   display: "swap",
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://gymflow-demo.vercel.app";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://gymflow-beryl.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -46,7 +47,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0B1220",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#0c1017" },
+    { media: "(prefers-color-scheme: light)", color: "#fbfbfc" },
+  ],
   width: "device-width",
   initialScale: 1,
 };
@@ -56,12 +60,13 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Dark-mode-first: the dashboard is designed against deep slate surfaces.
   return (
-    <html lang="en" className={`dark ${inter.variable}`} suppressHydrationWarning>
-      <body className="min-h-dvh bg-background font-sans text-foreground antialiased">
-        {children}
-        <Toaster position="top-right" richColors closeButton />
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
+      <body className="min-h-dvh bg-background font-sans text-sm text-foreground antialiased">
+        <ThemeProvider>
+          {children}
+          <Toaster position="top-right" richColors closeButton />
+        </ThemeProvider>
       </body>
     </html>
   );
