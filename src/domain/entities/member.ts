@@ -141,7 +141,9 @@ export class Member {
       cancelled: `${this.fullName}'s membership was cancelled.`,
     };
 
-    return { allowed: false, reason: status, message: messages[status] };
+    const blocked = status as Exclude<MembershipStatus, "active">;
+
+    return { allowed: false, reason: blocked, message: messages[blocked] };
   }
 
   /** Extends the term by `durationDays`, from today or from the unused remainder. */

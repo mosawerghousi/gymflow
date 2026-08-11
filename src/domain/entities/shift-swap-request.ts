@@ -52,6 +52,9 @@ export class ShiftSwapRequest {
   get resolvedAt(): Date | null {
     return this.props.resolvedAt;
   }
+  get createdAt(): Date {
+    return this.props.createdAt;
+  }
   get isPending(): boolean {
     return this.props.status === "pending";
   }
