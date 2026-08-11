@@ -425,7 +425,7 @@ export function CheckInDesk() {
 
 function Key({ children }: { children: React.ReactNode }) {
   return (
-    <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded border border-border bg-surface-2 px-1.5 font-sans text-2xs text-muted-foreground">
+    <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded border border-border bg-surface-2 px-1.5 font-sans text-2xs text-secondary-foreground">
       {children}
     </kbd>
   );

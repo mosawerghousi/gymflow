@@ -70,7 +70,7 @@ export function AppTopbar({ user, title }: { user: NavUser; title?: string }) {
       >
         <Search className="size-3.5" />
         <span className="pr-8">Search…</span>
-        <kbd className="rounded border border-border bg-surface-3 px-1.5 py-0.5 font-sans text-2xs text-muted-foreground">
+        <kbd className="rounded border border-border bg-surface-3 px-1.5 py-0.5 font-sans text-2xs text-secondary-foreground">
           {isMac ? "⌘" : "Ctrl"} K
         </kbd>
       </button>
@@ -81,10 +81,12 @@ export function AppTopbar({ user, title }: { user: NavUser; title?: string }) {
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className="flex items-center gap-2 rounded-md py-1 pr-1 pl-1 transition-colors duration-150 hover:bg-surface-2"
-            aria-label="Account menu"
+            className="flex items-center gap-2 rounded-md p-1 transition-colors duration-150 hover:bg-surface-2"
           >
             <MemberAvatar name={user.name} size="sm" />
+            {/* The avatar is aria-hidden, so the name comes from here — an
+                aria-label would clash with the visible initials. */}
+            <span className="sr-only">Account menu for {user.name}</span>
           </button>
         </DropdownMenuTrigger>
 

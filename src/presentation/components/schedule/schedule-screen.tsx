@@ -267,7 +267,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                         isToday(day) && "bg-brand-subtle",
                       )}
                     >
-                      <p className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">
+                      <p className="text-2xs font-medium tracking-wide text-secondary-foreground uppercase">
                         {DAY_LABELS[index]}
                       </p>
                       <p
@@ -316,13 +316,10 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                         return (
                           <div
                             key={`${day.toISOString()}-${hour}`}
-                            role={props.canManageShifts ? "button" : undefined}
-                            tabIndex={props.canManageShifts ? 0 : undefined}
-                            aria-label={
-                              props.canManageShifts
-                                ? `Create a shift on ${DAY_LABELS[dayIndex]} at ${hour}:00`
-                                : undefined
-                            }
+                            // Deliberately not focusable: 112 tab stops would be
+                            // hostile to keyboard users, and "Add shift" opens
+                            // the very same form.
+                            aria-hidden
                             onMouseDown={() => {
                               if (!props.canManageShifts) return;
                               dispatch(
@@ -336,21 +333,6 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                             }}
                             onMouseEnter={() => {
                               if (isDragging) dispatch(dragMoved(hour));
-                            }}
-                            onKeyDown={(event) => {
-                              if (!props.canManageShifts) return;
-                              if (event.key === "Enter" || event.key === " ") {
-                                event.preventDefault();
-                                dispatch(
-                                  dragStarted({
-                                    userId: staff[0]?.id ?? props.currentUserId,
-                                    dayIndex,
-                                    startHour: hour,
-                                    endHour: hour,
-                                  }),
-                                );
-                                dispatch(dragEnded());
-                              }
                             }}
                             className={cn(
                               "border-l border-border transition-colors duration-150",

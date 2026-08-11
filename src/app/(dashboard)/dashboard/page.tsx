@@ -160,7 +160,7 @@ export default async function DashboardPage() {
               <CardDescription>Still to come this week.</CardDescription>
               <CardAction>
                 <Button asChild variant="ghost" size="sm">
-                  <Link href="/schedule">
+                  <Link href="/schedule" aria-label="Open the schedule">
                     <ArrowRight />
                   </Link>
                 </Button>
@@ -250,7 +250,7 @@ export default async function DashboardPage() {
                 <CardDescription>Paid up, but no visit in 30 days.</CardDescription>
                 <CardAction>
                   <Button asChild variant="ghost" size="sm">
-                    <Link href="/reports">
+                    <Link href="/reports" aria-label="Open reports">
                       <ArrowRight />
                     </Link>
                   </Button>
