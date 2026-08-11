@@ -169,9 +169,9 @@ export async function seedDatabase(db: Database, now = new Date()): Promise<Seed
     const plan = pickPlan();
     const profile = pickProfile(random);
 
-    // Sign-ups spread over the last ~14 months, denser recently so the
-    // sign-ups chart trends upward.
-    const daysAgo = Math.floor(Math.pow(random.next(), 1.6) * 420);
+    // Sign-ups spread over ~27 months, denser recently so the gym reads as
+    // steadily growing rather than as having appeared all at once.
+    const daysAgo = Math.floor(Math.pow(random.next(), 1.5) * SEED_CONFIG.joinSpreadDays);
     const joinedAt = new Date(now.getTime() - daysAgo * DAY_MS);
 
     const membershipStartsAt = joinedAt;

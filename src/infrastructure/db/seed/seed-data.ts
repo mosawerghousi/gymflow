@@ -10,7 +10,15 @@ import { DEMO_KIOSK_TOKEN, DEMO_PASSWORD } from "@/presentation/lib/demo";
 
 export const SEED_CONFIG = {
   memberCount: 200,
-  checkinHistoryDays: 90,
+  /**
+   * Longer than the 90-day default report window on purpose: every headline
+   * metric shows a period-over-period delta, so the *preceding* window needs
+   * real data too, or the demo opens on a nonsense "+11,907%". This covers the
+   * 1-year preset and its comparison window.
+   */
+  checkinHistoryDays: 760,
+  /** Sign-ups are spread across this window, weighted towards recent months. */
+  joinSpreadDays: 820,
   shiftWeeks: 4,
   password: DEMO_PASSWORD,
   kioskToken: DEMO_KIOSK_TOKEN,
