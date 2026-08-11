@@ -26,7 +26,14 @@ import {
 
 import { StatCard } from "@/presentation/components/shared/stat-card";
 import { Button } from "@/presentation/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/presentation/components/ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/presentation/components/ui/card";
 import { Skeleton } from "@/presentation/components/ui/skeleton";
 import {
   Tabs,
@@ -434,20 +441,20 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
         <TabsContent value="team" className="space-y-6">
           {canSeeStaffHours ? (
             <Card>
-              <CardHeader className="flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="text-base">Staff hours</CardTitle>
-                  {staffHours ? (
-                    <p className="text-sm text-muted-foreground tabular-nums">
-                      {staffHours.totalScheduledHours} hours scheduled in this window.
-                    </p>
-                  ) : null}
-                </div>
-                <Button asChild variant="outline" size="sm">
-                  <a href={`/api/export/csv?report=staff-hours&days=${days}`}>
-                    <Download /> CSV
-                  </a>
-                </Button>
+              <CardHeader>
+                <CardTitle className="text-base">Staff hours</CardTitle>
+                {staffHours ? (
+                  <CardDescription className="tabular-nums">
+                    {staffHours.totalScheduledHours} hours scheduled in this window.
+                  </CardDescription>
+                ) : null}
+                <CardAction>
+                  <Button asChild variant="outline" size="sm">
+                    <a href={`/api/export/csv?report=staff-hours&days=${days}`}>
+                      <Download /> CSV
+                    </a>
+                  </Button>
+                </CardAction>
               </CardHeader>
               <CardContent>
                 {!staffHours ? (
@@ -492,13 +499,15 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
           ) : null}
 
           <Card>
-            <CardHeader className="flex-row items-center justify-between">
+            <CardHeader>
               <CardTitle className="text-base">Trainer performance</CardTitle>
-              <Button asChild variant="outline" size="sm">
-                <a href={`/api/export/csv?report=trainer-performance&days=${days}`}>
-                  <Download /> CSV
-                </a>
-              </Button>
+              <CardAction>
+                <Button asChild variant="outline" size="sm">
+                  <a href={`/api/export/csv?report=trainer-performance&days=${days}`}>
+                    <Download /> CSV
+                  </a>
+                </Button>
+              </CardAction>
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">

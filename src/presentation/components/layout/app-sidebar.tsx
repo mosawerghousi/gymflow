@@ -99,7 +99,9 @@ export function AppSidebar({ user }: { user: NavUser }) {
       >
         <MonitorSmartphone className="size-4.5 shrink-0" />
         Kiosk mode
-        <span className="ml-auto text-[10px] uppercase tracking-wider opacity-60">new tab</span>
+        <span className="ml-auto text-[10px] uppercase tracking-wider text-muted-foreground">
+          new tab
+        </span>
       </Link>
     </nav>
   );

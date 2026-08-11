@@ -7,8 +7,8 @@ import { cn } from "@/presentation/lib/utils";
  */
 const MEMBERSHIP_STYLES: Record<string, string> = {
   active: "border-primary/30 bg-primary/12 text-primary",
-  frozen: "border-sky-500/30 bg-sky-500/12 text-sky-400",
-  expired: "border-amber-500/30 bg-amber-500/12 text-amber-400",
+  frozen: "border-sky-500/30 bg-sky-500/12 text-sky-300",
+  expired: "border-amber-500/30 bg-amber-500/12 text-amber-300",
   cancelled: "border-destructive/30 bg-destructive/12 text-destructive",
 };
 
@@ -37,9 +37,9 @@ export function MembershipStatusBadge({
 }
 
 const SESSION_STYLES: Record<string, string> = {
-  booked: "border-sky-500/30 bg-sky-500/12 text-sky-400",
+  booked: "border-sky-500/30 bg-sky-500/12 text-sky-300",
   completed: "border-primary/30 bg-primary/12 text-primary",
-  no_show: "border-amber-500/30 bg-amber-500/12 text-amber-400",
+  no_show: "border-amber-500/30 bg-amber-500/12 text-amber-300",
   cancelled: "border-muted-foreground/30 bg-muted text-muted-foreground",
 };
 
@@ -59,8 +59,8 @@ export function SessionStatusBadge({ status }: { status: string }) {
 }
 
 const ROLE_STYLES: Record<string, string> = {
-  admin: "border-violet-500/30 bg-violet-500/12 text-violet-400",
-  staff: "border-sky-500/30 bg-sky-500/12 text-sky-400",
+  admin: "border-violet-500/30 bg-violet-500/12 text-violet-300",
+  staff: "border-sky-500/30 bg-sky-500/12 text-sky-300",
   trainer: "border-primary/30 bg-primary/12 text-primary",
 };
 

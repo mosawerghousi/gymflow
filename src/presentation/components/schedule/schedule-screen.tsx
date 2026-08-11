@@ -26,7 +26,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/presentation/components/ui/dialog";
-import { Input } from "@/presentation/components/ui/input";
 import { Label } from "@/presentation/components/ui/label";
 import {
   Select,
@@ -311,7 +310,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                   {/* Shift blocks, positioned over the grid */}
                   <div className="pointer-events-none absolute inset-0 grid grid-cols-[4rem_repeat(7,minmax(0,1fr))]">
                     <div />
-                    {days.map((day, dayIndex) => (
+                    {days.map((day) => (
                       <div key={day.toISOString()} className="relative">
                         {(data?.shifts ?? [])
                           .filter((shift) => sameDay(new Date(shift.startsAt), day))
@@ -334,11 +333,11 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                                 <span className="block truncate font-semibold">
                                   {shift.userName}
                                 </span>
-                                <span className="block truncate opacity-80">
+                                <span className="block truncate">
                                   {formatTime(shift.startsAt)}–{formatTime(shift.endsAt)}
                                 </span>
                                 {shift.swapStatus === "pending" ? (
-                                  <span className="mt-0.5 flex items-center gap-0.5 opacity-90">
+                                  <span className="mt-0.5 flex items-center gap-0.5">
                                     <Repeat className="size-2.5" /> swap
                                   </span>
                                 ) : null}
@@ -543,7 +542,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                   draft && dispatch(dragStarted({ ...draft, userId: value }))
                 }
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full" aria-label="Who is working this shift">
                   <SelectValue placeholder="Pick a staff member" />
                 </SelectTrigger>
                 <SelectContent>
@@ -678,7 +677,7 @@ function SwapResolver({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Select value={coverUserId} onValueChange={setCoverUserId}>
-        <SelectTrigger className="h-8 w-44 text-xs">
+        <SelectTrigger className="h-8 w-44 text-xs" aria-label="Choose who covers this shift">
           <SelectValue placeholder="Choose cover" />
         </SelectTrigger>
         <SelectContent>

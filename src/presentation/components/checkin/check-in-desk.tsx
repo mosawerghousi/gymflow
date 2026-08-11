@@ -16,7 +16,13 @@ import { toast } from "sonner";
 
 import { MembershipStatusBadge } from "@/presentation/components/shared/status-badge";
 import { Button } from "@/presentation/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/presentation/components/ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/presentation/components/ui/card";
 import { Input } from "@/presentation/components/ui/input";
 import { cn } from "@/presentation/lib/utils";
 import { apiErrorDetails, apiErrorMessage } from "@/presentation/store/api/base-api";
@@ -272,11 +278,13 @@ export function CheckInDesk() {
       {/* Right rail */}
       <div className="space-y-4">
         <Card>
-          <CardHeader className="flex-row items-center justify-between">
+          <CardHeader>
             <CardTitle className="text-base">In the gym</CardTitle>
-            <span className="rounded-full bg-primary/12 px-2.5 py-0.5 text-sm font-semibold text-primary tabular-nums">
-              {inGym?.count ?? 0}
-            </span>
+            <CardAction>
+              <span className="rounded-full bg-primary/12 px-2.5 py-0.5 text-sm font-semibold text-primary tabular-nums">
+                {inGym?.count ?? 0}
+              </span>
+            </CardAction>
           </CardHeader>
           <CardContent className="max-h-96 overflow-y-auto">
             {!inGym || inGym.visitors.length === 0 ? (

@@ -16,7 +16,14 @@ import { MembershipStatusBadge } from "@/presentation/components/shared/status-b
 import { StatCard } from "@/presentation/components/shared/stat-card";
 import { PageHeader } from "@/presentation/components/layout/page-header";
 import { Button } from "@/presentation/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/presentation/components/ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/presentation/components/ui/card";
 
 export const metadata: Metadata = { title: "Dashboard" };
 export const dynamic = "force-dynamic";
@@ -123,11 +130,13 @@ export default async function DashboardPage() {
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Who is in the gym right now */}
           <Card className="lg:col-span-1">
-            <CardHeader className="flex-row items-center justify-between">
+            <CardHeader>
               <CardTitle className="text-base">In the gym now</CardTitle>
-              <span className="rounded-full bg-primary/12 px-2.5 py-0.5 text-xs font-semibold text-primary tabular-nums">
-                {inGym.count}
-              </span>
+              <CardAction>
+                <span className="rounded-full bg-primary/12 px-2.5 py-0.5 text-xs font-semibold text-primary tabular-nums">
+                  {inGym.count}
+                </span>
+              </CardAction>
             </CardHeader>
             <CardContent>
               {inGym.visitors.length === 0 ? (
@@ -157,13 +166,15 @@ export default async function DashboardPage() {
 
           {/* This week's roster */}
           <Card className="lg:col-span-2">
-            <CardHeader className="flex-row items-center justify-between">
+            <CardHeader>
               <CardTitle className="text-base">Coming up this week</CardTitle>
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/schedule">
-                  Schedule <ArrowRight />
-                </Link>
-              </Button>
+              <CardAction>
+                <Button asChild variant="ghost" size="sm">
+                  <Link href="/schedule">
+                    Schedule <ArrowRight />
+                  </Link>
+                </Button>
+              </CardAction>
             </CardHeader>
             <CardContent className="grid gap-6 sm:grid-cols-2">
               <div>
@@ -211,18 +222,16 @@ export default async function DashboardPage() {
 
         {atRisk.length > 0 ? (
           <Card>
-            <CardHeader className="flex-row items-center justify-between">
-              <div>
-                <CardTitle className="text-base">At-risk members</CardTitle>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Paid up, but not through the door in 30 days.
-                </p>
-              </div>
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/reports">
-                  All reports <ArrowRight />
-                </Link>
-              </Button>
+            <CardHeader>
+              <CardTitle className="text-base">At-risk members</CardTitle>
+              <CardDescription>Paid up, but not through the door in 30 days.</CardDescription>
+              <CardAction>
+                <Button asChild variant="ghost" size="sm">
+                  <Link href="/reports">
+                    All reports <ArrowRight />
+                  </Link>
+                </Button>
+              </CardAction>
             </CardHeader>
             <CardContent>
               <ul className="divide-y divide-border">

@@ -1,7 +1,7 @@
 import { resolveSwapSchema } from "@/application/dto/schedule.dto";
 import { requireActor } from "@/composition/auth";
 import { useCases } from "@/composition/use-cases";
-import { ok, parseBody, route } from "@/presentation/lib/http";
+import { ok, route } from "@/presentation/lib/http";
 
 export const dynamic = "force-dynamic";
 
