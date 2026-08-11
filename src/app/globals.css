@@ -3,156 +3,231 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/*
- * GymFlow design language
- * - Deep slate surfaces, one strong primary (emerald #10B981) used everywhere.
- * - Dark-mode-first: the dashboard ships with `class="dark"` on <html>.
- */
+/* ==========================================================================
+   GymFlow design tokens
+   --------------------------------------------------------------------------
+   Dark-mode-first. Near-black slate surfaces in three elevation steps, one
+   accent (emerald) reserved for primary actions, active state and key data,
+   and a semantic trio that maps onto the domain: success = checked in,
+   warning = frozen, danger = expired / no-show.
+
+   Light mode is derived from the same token names — no component ever reads
+   a raw colour.
+   ========================================================================== */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
+  /* --- Surfaces & text ------------------------------------------------- */
+  --color-background: var(--surface-0);
+  --color-foreground: var(--text-primary);
+
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+
+  --color-card: var(--surface-1);
+  --color-card-foreground: var(--text-primary);
+  --color-popover: var(--surface-2);
+  --color-popover-foreground: var(--text-primary);
+
+  --color-muted: var(--surface-2);
+  --color-muted-foreground: var(--text-tertiary);
+  --color-secondary: var(--surface-2);
+  --color-secondary-foreground: var(--text-primary);
+  --color-accent: var(--surface-3);
+  --color-accent-foreground: var(--text-primary);
+
+  /* --- Brand ----------------------------------------------------------- */
+  --color-primary: var(--brand);
+  --color-primary-foreground: var(--brand-contrast);
+  --color-brand-subtle: var(--brand-subtle);
+  --color-brand-muted: var(--brand-muted);
+  --color-brand-strong: var(--brand-strong);
+
+  /* --- Semantic -------------------------------------------------------- */
   --color-success: var(--success);
+  --color-success-foreground: var(--success-contrast);
+  --color-success-subtle: var(--success-subtle);
   --color-warning: var(--warning);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
+  --color-warning-foreground: var(--warning-contrast);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-contrast);
+  --color-danger-subtle: var(--danger-subtle);
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: var(--danger-contrast);
+
+  /* --- Lines & focus --------------------------------------------------- */
+  --color-border: var(--line);
+  --color-border-strong: var(--line-strong);
+  --color-input: var(--line-strong);
+  --color-ring: var(--brand);
+
+  /* --- Charts: accent + greys, semantics only where they mean something - */
+  --color-chart-1: var(--brand);
+  --color-chart-2: var(--chart-grey-1);
+  --color-chart-3: var(--chart-grey-2);
+  --color-chart-4: var(--chart-grey-3);
+  --color-chart-5: var(--danger);
+
+  /* --- Sidebar --------------------------------------------------------- */
+  --color-sidebar: var(--sidebar-surface);
+  --color-sidebar-foreground: var(--text-secondary);
+  --color-sidebar-border: var(--line);
+
+  /* --- Type scale: 12 / 14 / 16 / 20 / 24 / 32, and nothing else -------- */
+  --text-2xs: 0.6875rem;   /* 11px — dense table meta only */
+  --text-2xs--line-height: 1rem;
+  --text-xs: 0.75rem;      /* 12 */
+  --text-xs--line-height: 1.125rem;
+  --text-sm: 0.875rem;     /* 14 — body default */
+  --text-sm--line-height: 1.375rem;
+  --text-base: 1rem;       /* 16 */
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.25rem;      /* 20 */
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.5rem;       /* 24 */
+  --text-xl--line-height: 2rem;
+  --text-2xl: 2rem;        /* 32 */
+  --text-2xl--line-height: 2.375rem;
+  --text-3xl: 3rem;        /* 48 — hero metric / kiosk only */
+  --text-3xl--line-height: 1;
+  --text-4xl: 4.5rem;      /* 72 — kiosk only */
+  --text-4xl--line-height: 1;
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  /* --- Radius: one family --------------------------------------------- */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* --- Motion: only where it communicates ------------------------------ */
+  --ease-out-quick: cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-check-in: check-in 420ms var(--ease-out-quick);
+  --animate-sweep: sweep 620ms var(--ease-out-quick);
+  --animate-breathe: breathe 4s ease-in-out infinite;
 }
 
 :root {
-  --radius: 0.65rem;
+  --radius: 12px;
 
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.208 0.042 265.755);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.208 0.042 265.755);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.208 0.042 265.755);
+  /* Light mode — same roles, derived from the same scale. */
+  --surface-0: oklch(0.985 0.002 250);
+  --surface-1: oklch(1 0 0);
+  --surface-2: oklch(0.975 0.003 250);
+  --surface-3: oklch(0.955 0.005 250);
+  --sidebar-surface: oklch(0.975 0.003 250);
 
-  /* Primary — emerald #10B981 */
-  --primary: oklch(0.696 0.17 162.48);
-  --primary-foreground: oklch(0.129 0.042 264.695);
+  --text-primary: oklch(0.21 0.02 258);
+  --text-secondary: oklch(0.42 0.02 258);
+  --text-tertiary: oklch(0.55 0.018 258);
 
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --success: oklch(0.696 0.17 162.48);
-  --warning: oklch(0.769 0.188 70.08);
+  --line: oklch(0.915 0.006 258);
+  --line-strong: oklch(0.86 0.008 258);
 
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.696 0.17 162.48);
+  --brand: oklch(0.60 0.15 162);
+  --brand-strong: oklch(0.54 0.15 162);
+  --brand-contrast: oklch(1 0 0);
+  --brand-subtle: oklch(0.955 0.03 162);
+  --brand-muted: oklch(0.88 0.07 162);
 
-  --chart-1: oklch(0.696 0.17 162.48);
-  --chart-2: oklch(0.623 0.214 259.815);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
+  --success: oklch(0.60 0.15 162);
+  --success-contrast: oklch(1 0 0);
+  --success-subtle: oklch(0.955 0.03 162);
 
-  --sidebar: oklch(0.984 0.003 247.858);
-  --sidebar-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-primary: oklch(0.696 0.17 162.48);
-  --sidebar-primary-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.696 0.17 162.48);
+  --warning: oklch(0.62 0.15 62);
+  --warning-contrast: oklch(1 0 0);
+  --warning-subtle: oklch(0.96 0.04 75);
+
+  --danger: oklch(0.55 0.21 25);
+  --danger-contrast: oklch(1 0 0);
+  --danger-subtle: oklch(0.96 0.03 25);
+
+  --chart-grey-1: oklch(0.62 0.02 258);
+  --chart-grey-2: oklch(0.74 0.015 258);
+  --chart-grey-3: oklch(0.84 0.01 258);
 }
 
 .dark {
-  --background: oklch(0.145 0.035 264.5);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.196 0.036 265.2);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.196 0.036 265.2);
-  --popover-foreground: oklch(0.984 0.003 247.858);
+  /* Dark mode — the default. Near-black slate, never pure black. */
+  --surface-0: oklch(0.158 0.011 258);
+  --surface-1: oklch(0.196 0.013 258);
+  --surface-2: oklch(0.233 0.014 258);
+  --surface-3: oklch(0.272 0.015 258);
+  --sidebar-surface: oklch(0.176 0.012 258);
 
-  --primary: oklch(0.696 0.17 162.48);
-  --primary-foreground: oklch(0.129 0.042 264.695);
+  --text-primary: oklch(0.975 0.003 250);
+  --text-secondary: oklch(0.78 0.012 255);
+  --text-tertiary: oklch(0.635 0.016 255);
 
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.637 0.237 25.331);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --success: oklch(0.765 0.177 163.223);
-  --warning: oklch(0.828 0.189 84.429);
+  --line: oklch(0.30 0.014 258);
+  --line-strong: oklch(0.38 0.016 258);
 
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 14%);
-  --ring: oklch(0.696 0.17 162.48);
+  --brand: oklch(0.735 0.168 163);
+  --brand-strong: oklch(0.80 0.16 163);
+  --brand-contrast: oklch(0.16 0.02 165);
+  --brand-subtle: oklch(0.735 0.168 163 / 14%);
+  --brand-muted: oklch(0.735 0.168 163 / 28%);
 
-  --chart-1: oklch(0.765 0.177 163.223);
-  --chart-2: oklch(0.707 0.165 254.624);
-  --chart-3: oklch(0.828 0.189 84.429);
-  --chart-4: oklch(0.714 0.203 305.504);
-  --chart-5: oklch(0.712 0.194 13.428);
+  --success: oklch(0.755 0.17 163);
+  --success-contrast: oklch(0.16 0.02 165);
+  --success-subtle: oklch(0.755 0.17 163 / 14%);
 
-  --sidebar: oklch(0.176 0.036 265.2);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.696 0.17 162.48);
-  --sidebar-primary-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.696 0.17 162.48);
+  --warning: oklch(0.80 0.15 78);
+  --warning-contrast: oklch(0.18 0.02 78);
+  --warning-subtle: oklch(0.80 0.15 78 / 14%);
+
+  --danger: oklch(0.70 0.19 22);
+  --danger-contrast: oklch(0.16 0.02 22);
+  --danger-subtle: oklch(0.70 0.19 22 / 14%);
+
+  --chart-grey-1: oklch(0.68 0.02 258);
+  --chart-grey-2: oklch(0.54 0.018 258);
+  --chart-grey-3: oklch(0.42 0.016 258);
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    border-color: var(--line);
+  }
+
+  html {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
   }
 
   body {
-    @apply bg-background text-foreground;
+    background-color: var(--surface-0);
+    color: var(--text-primary);
     font-feature-settings: "cv11", "ss01";
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
-  /* Slimmer scrollbars inside dashboard panes */
+  /* One focus treatment everywhere: accent ring, 2px, offset. */
+  :focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Figures line up in tables and metrics without being asked to. */
+  th,
+  td,
+  [data-numeric] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    background: var(--brand-muted);
+    color: var(--text-primary);
+  }
+
   ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
@@ -161,19 +236,93 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: var(--border);
+    background: var(--line-strong);
     border-radius: 9999px;
     border: 3px solid transparent;
     background-clip: content-box;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--muted-foreground);
+    background: var(--text-tertiary);
     background-clip: content-box;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
-@utility grid-faint {
-  background-image:
-    linear-gradient(to right, var(--border) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+/* --------------------------------------------------------------------------
+   Motion — the check-in is the most repeated action in the app, so it is the
+   one interaction that gets a deliberate moment.
+   -------------------------------------------------------------------------- */
+
+@keyframes check-in {
+  0% {
+    transform: scale(0.96);
+    box-shadow: 0 0 0 0 var(--brand-muted);
+  }
+  45% {
+    transform: scale(1.015);
+    box-shadow: 0 0 0 8px var(--brand-subtle);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@keyframes sweep {
+  0% {
+    background-position: -140% 0;
+  }
+  100% {
+    background-position: 140% 0;
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.82;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.035);
+  }
+}
+
+/* A green sweep across a check-in row, layered over the row's own background. */
+@utility row-sweep {
+  background-image: linear-gradient(
+    100deg,
+    transparent 20%,
+    var(--brand-subtle) 45%,
+    var(--brand-muted) 50%,
+    var(--brand-subtle) 55%,
+    transparent 80%
+  );
+  background-size: 220% 100%;
+  animation: var(--animate-sweep);
+}
+
+@utility elevation-1 {
+  background-color: var(--surface-1);
+  border: 1px solid var(--line);
+}
+
+@utility elevation-2 {
+  background-color: var(--surface-2);
+  border: 1px solid var(--line);
+}
+
+@utility elevation-3 {
+  background-color: var(--surface-3);
+  border: 1px solid var(--line-strong);
 }
