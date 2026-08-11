@@ -39,3 +39,7 @@ yarn-error.log*
 
 # drizzle
 /drizzle/meta/_journal.json.bak
+.env*
+
+# local verification helpers
+/scripts/verify-db.ts

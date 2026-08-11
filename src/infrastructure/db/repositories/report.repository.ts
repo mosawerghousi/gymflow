@@ -15,6 +15,17 @@ import type { UserRole } from "@/domain/entities/user";
 import type { Database } from "../client";
 
 /**
+ * Binds an instant as a timestamptz parameter.
+ *
+ * `db.execute()` hands raw parameters to postgres-js's `unsafe()`, which does
+ * not serialize a `Date` — so instants cross as ISO strings with an explicit
+ * cast rather than as Date objects.
+ */
+function ts(instant: Date) {
+  return sql`${instant.toISOString()}::timestamptz`;
+}
+
+/**
  * Every figure on the reports screen is computed by Postgres.
  *
  * Nothing here pulls rows into JavaScript to fold them — a 200-member demo and
@@ -33,12 +44,12 @@ export class DrizzleReportRepository implements ReportRepository {
     }>(sql`
       select
         count(*) filter (
-          where status = 'active' and (membership_ends_at is null or membership_ends_at > ${asOf})
+          where status = 'active' and (membership_ends_at is null or membership_ends_at > ${ts(asOf)})
         ) as active,
         count(*) filter (where status = 'frozen') as frozen,
         count(*) filter (
           where status = 'expired'
-             or (status = 'active' and membership_ends_at <= ${asOf})
+             or (status = 'active' and membership_ends_at <= ${ts(asOf)})
         ) as expired,
         count(*) filter (where status = 'cancelled') as cancelled,
         count(*) as total
@@ -61,7 +72,7 @@ export class DrizzleReportRepository implements ReportRepository {
     const rows = await this.db.execute<{ date: string; count: string }>(sql`
       select to_char(joined_at at time zone 'UTC', 'YYYY-MM-DD') as date, count(*) as count
       from members
-      where joined_at between ${from} and ${to}
+      where joined_at between ${ts(from)} and ${ts(to)}
       group by 1
       order by 1
     `);
@@ -73,7 +84,7 @@ export class DrizzleReportRepository implements ReportRepository {
     const rows = await this.db.execute<{ date: string; count: string }>(sql`
       select to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD') as date, count(*) as count
       from members
-      where status = 'cancelled' and updated_at between ${from} and ${to}
+      where status = 'cancelled' and updated_at between ${ts(from)} and ${ts(to)}
       group by 1
       order by 1
     `);
@@ -85,7 +96,7 @@ export class DrizzleReportRepository implements ReportRepository {
     const rows = await this.db.execute<{ date: string; count: string }>(sql`
       select to_char(checked_in_at at time zone 'UTC', 'YYYY-MM-DD') as date, count(*) as count
       from checkins
-      where checked_in_at between ${from} and ${to}
+      where checked_in_at between ${ts(from)} and ${ts(to)}
       group by 1
       order by 1
     `);
@@ -97,7 +108,7 @@ export class DrizzleReportRepository implements ReportRepository {
     const rows = await this.db.execute<{ count: string }>(sql`
       select count(distinct member_id) as count
       from checkins
-      where checked_in_at between ${from} and ${to}
+      where checked_in_at between ${ts(from)} and ${ts(to)}
     `);
 
     return Number(rows[0]?.count ?? 0);
@@ -114,7 +125,7 @@ export class DrizzleReportRepository implements ReportRepository {
         extract(hour from checked_in_at at time zone 'UTC')::int as hour,
         count(*) as count
       from checkins
-      where checked_in_at between ${from} and ${to}
+      where checked_in_at between ${ts(from)} and ${ts(to)}
       group by 1, 2
       order by 1, 2
     `);
@@ -149,17 +160,17 @@ export class DrizzleReportRepository implements ReportRepository {
         lv.last_visit_at                      as last_visit_at,
         case
           when lv.last_visit_at is null then null
-          else floor(extract(epoch from (${asOf}::timestamptz - lv.last_visit_at)) / 86400)::int
+          else floor(extract(epoch from (${ts(asOf)} - lv.last_visit_at)) / 86400)::int
         end                                   as days_since_last_visit,
         m.membership_ends_at                  as membership_ends_at
       from members m
       left join last_visits lv on lv.member_id = m.id
       where m.deleted_at is null
         and m.status in ('active', 'frozen')
-        and (m.membership_ends_at is null or m.membership_ends_at > ${asOf})
+        and (m.membership_ends_at is null or m.membership_ends_at > ${ts(asOf)})
         and (
           lv.last_visit_at is null
-          or lv.last_visit_at < ${asOf}::timestamptz - make_interval(days => ${inactiveDays})
+          or lv.last_visit_at < ${ts(asOf)} - make_interval(days => ${inactiveDays})
         )
       order by lv.last_visit_at asc nulls first
       limit ${limit}
@@ -200,8 +211,8 @@ export class DrizzleReportRepository implements ReportRepository {
       from users u
       left join shifts s
         on s.user_id = u.id
-       and s.starts_at >= ${from}
-       and s.starts_at <= ${to}
+       and s.starts_at >= ${ts(from)}
+       and s.starts_at <= ${ts(to)}
       where u.is_active = true
       group by u.id, u.name, u.role
       order by scheduled_hours desc, u.name asc
@@ -236,8 +247,8 @@ export class DrizzleReportRepository implements ReportRepository {
       from users u
       left join trainer_sessions ts
         on ts.trainer_id = u.id
-       and ts.starts_at >= ${from}
-       and ts.starts_at <= ${to}
+       and ts.starts_at >= ${ts(from)}
+       and ts.starts_at <= ${ts(to)}
       where u.role = 'trainer' and u.is_active = true
       group by u.id, u.name
       order by u.name asc
@@ -299,7 +310,7 @@ export class DrizzleReportRepository implements ReportRepository {
       from members
       where deleted_at is null
         and status = 'cancelled'
-        and updated_at between ${from} and ${to}
+        and updated_at between ${ts(from)} and ${ts(to)}
     `);
 
     return Number(rows[0]?.count ?? 0);
@@ -310,8 +321,8 @@ export class DrizzleReportRepository implements ReportRepository {
       select count(*) as count
       from members
       where deleted_at is null
-        and joined_at <= ${instant}
-        and (membership_ends_at is null or membership_ends_at > ${instant})
+        and joined_at <= ${ts(instant)}
+        and (membership_ends_at is null or membership_ends_at > ${ts(instant)})
         and status <> 'cancelled'
     `);
 
