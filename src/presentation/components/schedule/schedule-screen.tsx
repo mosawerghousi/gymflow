@@ -310,61 +310,85 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                   {/* Shift blocks, positioned over the grid */}
                   <div className="pointer-events-none absolute inset-0 grid grid-cols-[4rem_repeat(7,minmax(0,1fr))]">
                     <div />
-                    {days.map((day) => (
-                      <div key={day.toISOString()} className="relative">
-                        {(data?.shifts ?? [])
-                          .filter((shift) => sameDay(new Date(shift.startsAt), day))
-                          .map((shift) => {
-                            const geometry = blockGeometry(shift.startsAt, shift.endsAt);
-                            if (!geometry) return null;
+                    {days.map((day) => {
+                      // Shifts that run at the same time are packed into
+                      // side-by-side lanes, the way a real calendar does it —
+                      // otherwise two people on the same slot render on top of
+                      // each other and neither name is readable.
+                      const dayShifts = packIntoLanes(
+                        (data?.shifts ?? []).filter((shift) =>
+                          sameDay(new Date(shift.startsAt), day),
+                        ),
+                        (shift) => new Date(shift.startsAt).getTime(),
+                        (shift) => new Date(shift.endsAt).getTime(),
+                      );
 
-                            return (
-                              <button
-                                key={shift.id}
-                                type="button"
-                                onClick={() => dispatch(shiftSelected(shift.id))}
-                                style={geometry}
-                                className={cn(
-                                  "pointer-events-auto absolute inset-x-1 overflow-hidden rounded-md border px-1.5 py-1 text-left text-[11px] leading-tight transition-opacity hover:opacity-90",
-                                  POSITION_COLORS[shift.position] ?? "bg-muted",
-                                  shift.status === "cancelled" && "opacity-40 line-through",
-                                )}
-                              >
-                                <span className="block truncate font-semibold">
-                                  {shift.userName}
-                                </span>
-                                <span className="block truncate">
-                                  {formatTime(shift.startsAt)}–{formatTime(shift.endsAt)}
-                                </span>
-                                {shift.swapStatus === "pending" ? (
-                                  <span className="mt-0.5 flex items-center gap-0.5">
-                                    <Repeat className="size-2.5" /> swap
+                      return (
+                        <div key={day.toISOString()} className="relative">
+                          {/* Shifts occupy everything but a narrow right-hand
+                              strip, which is reserved for session markers. */}
+                          <div className="absolute inset-y-0 left-0 right-3">
+                            {dayShifts.map(({ item: shift, lane, lanes }) => {
+                              const geometry = blockGeometry(shift.startsAt, shift.endsAt);
+                              if (!geometry) return null;
+
+                              return (
+                                <button
+                                  key={shift.id}
+                                  type="button"
+                                  onClick={() => dispatch(shiftSelected(shift.id))}
+                                  title={`${shift.userName} · ${SHIFT_POSITION_LABELS[shift.position]} · ${formatTime(shift.startsAt)}–${formatTime(shift.endsAt)}`}
+                                  style={{
+                                    ...geometry,
+                                    left: `calc(${(lane / lanes) * 100}% + 2px)`,
+                                    width: `calc(${100 / lanes}% - 4px)`,
+                                  }}
+                                  className={cn(
+                                    "pointer-events-auto absolute overflow-hidden rounded-md border px-1 py-0.5 text-left text-[11px] leading-tight transition-opacity hover:opacity-90",
+                                    POSITION_COLORS[shift.position] ?? "bg-muted",
+                                    shift.status === "cancelled" && "opacity-40 line-through",
+                                  )}
+                                >
+                                  <span className="block truncate font-semibold">
+                                    {shift.userName}
                                   </span>
-                                ) : null}
-                              </button>
-                            );
-                          })}
+                                  {lanes < 3 ? (
+                                    <span className="block truncate">
+                                      {formatTime(shift.startsAt)}–{formatTime(shift.endsAt)}
+                                    </span>
+                                  ) : null}
+                                  {shift.swapStatus === "pending" ? (
+                                    <span className="mt-0.5 flex items-center gap-0.5">
+                                      <Repeat className="size-2.5" />
+                                      {lanes < 3 ? "swap" : null}
+                                    </span>
+                                  ) : null}
+                                </button>
+                              );
+                            })}
+                          </div>
 
-                        {(data?.sessions ?? [])
-                          .filter((session) => sameDay(new Date(session.startsAt), day))
-                          .map((session) => {
-                            const geometry = blockGeometry(session.startsAt, session.endsAt);
-                            if (!geometry) return null;
+                          {(data?.sessions ?? [])
+                            .filter((session) => sameDay(new Date(session.startsAt), day))
+                            .map((session) => {
+                              const geometry = blockGeometry(session.startsAt, session.endsAt);
+                              if (!geometry) return null;
 
-                            return (
-                              <div
-                                key={session.id}
-                                style={geometry}
-                                title={`${session.memberName} with ${session.trainerName}`}
-                                className={cn(
-                                  "pointer-events-auto absolute right-1 w-2 rounded-full border border-emerald-300/60 bg-emerald-400/70",
-                                  session.status === "cancelled" && "opacity-30",
-                                )}
-                              />
-                            );
-                          })}
-                      </div>
-                    ))}
+                              return (
+                                <div
+                                  key={session.id}
+                                  style={geometry}
+                                  title={`PT: ${session.memberName} with ${session.trainerName} · ${formatTime(session.startsAt)}`}
+                                  className={cn(
+                                    "pointer-events-auto absolute right-0.5 w-2 rounded-full border border-emerald-300/60 bg-emerald-400/70",
+                                    session.status === "cancelled" && "opacity-30",
+                                  )}
+                                />
+                              );
+                            })}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -717,6 +741,66 @@ function atHour(day: Date, hour: number): Date {
   return new Date(
     Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), hour, 0, 0, 0),
   );
+}
+
+interface Lane<T> {
+  item: T;
+  lane: number;
+  /** How many lanes the overlapping cluster needs, i.e. this block's width. */
+  lanes: number;
+}
+
+/**
+ * Packs items into side-by-side lanes.
+ *
+ * Items are grouped into clusters of things that actually overlap, and each
+ * cluster is widened only as far as it needs to be — so a lone evening shift
+ * still spans the full column even if the morning had four people on at once.
+ */
+function packIntoLanes<T>(
+  items: readonly T[],
+  startOf: (item: T) => number,
+  endOf: (item: T) => number,
+): Array<Lane<T>> {
+  const sorted = [...items].sort(
+    (a, b) => startOf(a) - startOf(b) || endOf(a) - endOf(b),
+  );
+
+  const packed: Array<Lane<T>> = [];
+  let cluster: Array<Lane<T>> = [];
+  let laneEnds: number[] = [];
+  let clusterEnd = Number.NEGATIVE_INFINITY;
+
+  const closeCluster = () => {
+    for (const entry of cluster) entry.lanes = laneEnds.length;
+    packed.push(...cluster);
+    cluster = [];
+    laneEnds = [];
+    clusterEnd = Number.NEGATIVE_INFINITY;
+  };
+
+  for (const item of sorted) {
+    const start = startOf(item);
+    const end = endOf(item);
+
+    if (cluster.length > 0 && start >= clusterEnd) closeCluster();
+
+    let lane = laneEnds.findIndex((laneEnd) => laneEnd <= start);
+
+    if (lane === -1) {
+      lane = laneEnds.length;
+      laneEnds.push(end);
+    } else {
+      laneEnds[lane] = end;
+    }
+
+    clusterEnd = Math.max(clusterEnd, end);
+    cluster.push({ item, lane, lanes: 1 });
+  }
+
+  if (cluster.length > 0) closeCluster();
+
+  return packed;
 }
 
 /** Converts a shift's times into a percentage-based position in the grid. */
