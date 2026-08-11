@@ -1,4 +1,4 @@
-import { ArrowDownRight, ArrowRight, ArrowUpRight } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUp } from "lucide-react";
 import type { ComponentType, ReactNode } from "react";
 
 import { Card, CardContent } from "@/presentation/components/ui/card";
@@ -11,11 +11,17 @@ export interface StatCardProps {
   icon?: ComponentType<{ className?: string }>;
   /** Percentage change vs. the preceding period; `null` when there is no baseline. */
   changePct?: number | null;
-  /** Set when a rise is bad news (churn, no-shows) so the colour flips. */
+  /** Set when a rise is bad news (churn, no-shows) so the reading flips. */
   invertTrend?: boolean;
   className?: string;
 }
 
+/**
+ * A supporting metric.
+ *
+ * Deliberately quiet: the value is 32px in plain foreground, not accent — only
+ * the hero metric gets colour, so the eye lands there first.
+ */
 export function StatCard({
   label,
   value,
@@ -30,37 +36,44 @@ export function StatCard({
   const isUp = hasTrend && changePct > 0;
   const isGood = isFlat ? null : invertTrend ? !isUp : isUp;
 
-  const TrendIcon = isFlat ? ArrowRight : isUp ? ArrowUpRight : ArrowDownRight;
+  const TrendIcon = isFlat ? ArrowRight : isUp ? ArrowUp : ArrowDown;
 
   return (
     <Card className={cn("gap-0 py-4", className)}>
-      <CardContent className="px-4">
-        <div className="flex items-start justify-between gap-3">
-          <p className="text-sm font-medium text-muted-foreground">{label}</p>
-          {Icon ? <Icon className="size-4 shrink-0 text-muted-foreground/70" /> : null}
+      <CardContent className="space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            {label}
+          </p>
+          {Icon ? <Icon className="size-3.5 shrink-0 text-muted-foreground" /> : null}
         </div>
 
-        <p className="mt-2 text-2xl font-semibold tracking-tight tabular-nums">{value}</p>
+        <p data-numeric className="text-xl leading-none font-semibold tracking-tight">
+          {value}
+        </p>
 
-        <div className="mt-1.5 flex items-center gap-2 text-xs">
-          {hasTrend ? (
-            <span
-              className={cn(
-                "inline-flex items-center gap-0.5 font-medium tabular-nums",
-                isGood === null
-                  ? "text-muted-foreground"
-                  : isGood
-                    ? "text-primary"
-                    : "text-amber-400",
-              )}
-            >
-              <TrendIcon className="size-3.5" />
-              {Math.abs(changePct).toFixed(1)}%
-            </span>
-          ) : null}
+        {hasTrend || hint ? (
+          <div className="flex items-center gap-2 text-xs">
+            {hasTrend ? (
+              <span
+                data-numeric
+                className={cn(
+                  "inline-flex items-center gap-0.5 font-medium",
+                  isGood === null
+                    ? "text-muted-foreground"
+                    : isGood
+                      ? "text-success"
+                      : "text-warning",
+                )}
+              >
+                <TrendIcon className="size-3" />
+                {Math.abs(changePct).toFixed(1)}%
+              </span>
+            ) : null}
 
-          {hint ? <span className="truncate text-muted-foreground">{hint}</span> : null}
-        </div>
+            {hint ? <span className="truncate text-muted-foreground">{hint}</span> : null}
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );

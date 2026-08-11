@@ -4,8 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
-  CheckCircle2,
+  CalendarPlus,
+  Check,
   Clock,
+  CornerDownLeft,
   Loader2,
   LogOut,
   Search,
@@ -14,7 +16,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { MembershipStatusBadge } from "@/presentation/components/shared/status-badge";
+import { MemberAvatar } from "@/presentation/components/shared/member-avatar";
+import { EmptyState, ListSkeleton } from "@/presentation/components/shared/states";
+import { MembershipStatus, StatusDot } from "@/presentation/components/shared/status-badge";
 import { Button } from "@/presentation/components/ui/button";
 import {
   Card,
@@ -42,15 +46,17 @@ import {
 } from "@/presentation/store/checkin-slice";
 import { useAppDispatch, useAppSelector } from "@/presentation/store/hooks";
 
-/** How long to wait after the last keystroke before searching. */
-const SEARCH_DEBOUNCE_MS = 180;
+const SEARCH_DEBOUNCE_MS = 160;
+/** How long the success row keeps its sweep before settling. */
+const SWEEP_MS = 1400;
 
 /**
- * The front-desk screen.
+ * The front desk.
  *
- * Type a name or code, arrow through the matches, hit Enter to check someone
- * in. Search state lives in `checkinSlice`; every read and write goes through
- * RTK Query, which keeps the "in gym" counter in step automatically via tags.
+ * Keyboard-first by design: the search is auto-focused and oversized, results
+ * are touch-sized rows, and Enter checks in the top result. Success gets the
+ * one deliberate motion moment in the app — a green sweep and an accent flash
+ * — because this is the interaction a desk performs hundreds of times a day.
  */
 export function CheckInDesk() {
   const dispatch = useAppDispatch();
@@ -60,14 +66,14 @@ export function CheckInDesk() {
 
   const inputRef = useRef<HTMLInputElement>(null);
   const debouncedQuery = useDebounced(query, SEARCH_DEBOUNCE_MS);
+  const [sweptId, setSweptId] = useState<string | null>(null);
 
   const { data: results = [], isFetching } = useSearchDeskQuery(
     { query: debouncedQuery },
     { skip: debouncedQuery.trim().length === 0 },
   );
 
-  const { data: inGym } = useCurrentlyInGymQuery(undefined, {
-    // The roster is a live surface — refresh it while the desk is open.
+  const { data: inGym, isLoading: isRosterLoading } = useCurrentlyInGymQuery(undefined, {
     pollingInterval: 30_000,
   });
 
@@ -81,6 +87,8 @@ export function CheckInDesk() {
       const result = await checkIn({ memberId, method: "manual" }).unwrap();
 
       dispatch(checkInSucceeded(result));
+      setSweptId(memberId);
+      setTimeout(() => setSweptId(null), SWEEP_MS);
 
       if (result.outcome === "already_inside") {
         toast.info(`${result.member.fullName} is already checked in.`);
@@ -99,8 +107,6 @@ export function CheckInDesk() {
           memberCode: typeof details?.memberCode === "string" ? details.memberCode : undefined,
         }),
       );
-
-      toast.error(apiErrorMessage(error, "Check-in failed."));
     }
   }
 
@@ -122,11 +128,11 @@ export function CheckInDesk() {
   }
 
   return (
-    <div className="grid gap-6 px-5 py-6 sm:px-8 xl:grid-cols-[minmax(0,1fr)_22rem]">
+    <div className="grid gap-5 px-5 pb-10 sm:px-8 xl:grid-cols-[minmax(0,1fr)_21rem]">
       <div className="space-y-4">
-        {/* Search */}
+        {/* The giant, auto-focused search. */}
         <div className="relative">
-          <Search className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-muted-foreground" />
+          <Search className="pointer-events-none absolute top-1/2 left-5 size-5 -translate-y-1/2 text-muted-foreground" />
           <Input
             ref={inputRef}
             autoFocus
@@ -135,62 +141,103 @@ export function CheckInDesk() {
             onKeyDown={onKeyDown}
             placeholder="Search by name, member code, email or phone…"
             aria-label="Search members to check in"
-            className="h-14 pl-12 text-base md:text-base"
+            className="h-16 rounded-xl pl-14 text-base md:text-base"
           />
           {isFetching ? (
-            <Loader2 className="absolute top-1/2 right-12 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+            <Loader2 className="absolute top-1/2 right-14 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
           ) : null}
           {query ? (
             <Button
               variant="ghost"
               size="icon"
               aria-label="Clear search"
-              className="absolute top-1/2 right-2 -translate-y-1/2"
+              className="absolute top-1/2 right-3 -translate-y-1/2"
               onClick={() => {
                 dispatch(deskCleared());
                 inputRef.current?.focus();
               }}
             >
-              <X className="size-4" />
+              <X />
             </Button>
           ) : null}
         </div>
 
-        <p className="text-xs text-muted-foreground">
-          <kbd className="rounded border border-border px-1.5 py-0.5 font-sans">↑</kbd>{" "}
-          <kbd className="rounded border border-border px-1.5 py-0.5 font-sans">↓</kbd> to move ·{" "}
-          <kbd className="rounded border border-border px-1.5 py-0.5 font-sans">Enter</kbd> to check
-          in · <kbd className="rounded border border-border px-1.5 py-0.5 font-sans">Esc</kbd> to
-          clear
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            <Key>↑</Key>
+            <Key>↓</Key> move
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Key>
+              <CornerDownLeft className="size-2.5" />
+            </Key>
+            check in
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Key>Esc</Key> clear
+          </span>
         </p>
 
         {/* Outcome banner */}
         {lastError ? (
-          <Banner tone="error" icon={AlertTriangle} title="Check-in blocked">
-            {lastError.message}
-          </Banner>
-        ) : lastResult ? (
-          <Banner
-            tone={lastResult.outcome === "already_inside" ? "info" : "success"}
-            icon={CheckCircle2}
-            title={
-              lastResult.outcome === "already_inside"
-                ? `${lastResult.member.fullName} is already inside`
-                : `${lastResult.member.fullName} is in`
-            }
+          <div
+            role="alert"
+            className="flex items-start gap-3 rounded-xl border border-danger/45 bg-danger-subtle px-4 py-3.5"
           >
-            <span className="font-mono">{lastResult.member.code}</span>
-            {lastResult.member.planName ? ` · ${lastResult.member.planName}` : ""}
-            {lastResult.warnings.length > 0 ? ` · ${lastResult.warnings.join(" ")}` : ""}
-          </Banner>
+            <AlertTriangle className="mt-0.5 size-5 shrink-0 text-danger" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-danger">Entry blocked</p>
+              <p className="mt-0.5 text-sm text-foreground">{lastError.message}</p>
+            </div>
+            <Button asChild size="sm" variant="secondary" className="shrink-0">
+              <Link href="/members">
+                <CalendarPlus /> Renew
+              </Link>
+            </Button>
+          </div>
+        ) : lastResult ? (
+          <div
+            key={lastResult.checkin.id}
+            className={cn(
+              "flex items-center gap-4 rounded-xl border px-4 py-3.5",
+              lastResult.outcome === "already_inside"
+                ? "border-border bg-surface-2"
+                : "animate-[var(--animate-check-in)] border-success/45 bg-success-subtle",
+            )}
+          >
+            <MemberAvatar name={lastResult.member.fullName} size="lg" />
+
+            <div className="min-w-0 flex-1">
+              <p className="text-base font-semibold">
+                {lastResult.outcome === "already_inside"
+                  ? `${lastResult.member.fullName} is already inside`
+                  : `${lastResult.member.fullName} is in`}
+              </p>
+              <p className="mt-0.5 truncate text-sm text-muted-foreground">
+                <span className="font-mono">{lastResult.member.code}</span>
+                {lastResult.member.planName ? ` · ${lastResult.member.planName}` : ""}
+                {lastResult.warnings.length > 0 ? ` · ${lastResult.warnings.join(" ")}` : ""}
+              </p>
+            </div>
+
+            {lastResult.outcome === "checked_in" ? (
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-success text-success-foreground">
+                <Check className="size-5" />
+              </span>
+            ) : null}
+          </div>
         ) : null}
 
         {/* Results */}
         {debouncedQuery.trim().length > 0 ? (
           results.length === 0 && !isFetching ? (
-            <Card>
-              <CardContent className="py-10 text-center text-sm text-muted-foreground">
-                No member matches “{debouncedQuery}”.
+            <Card className="py-0">
+              <CardContent className="px-0">
+                <EmptyState
+                  icon={Search}
+                  title={`Nothing matches “${debouncedQuery}”`}
+                  description="Try a partial name, or the member code from their card."
+                />
               </CardContent>
             </Card>
           ) : (
@@ -209,40 +256,41 @@ export function CheckInDesk() {
                     }
                     disabled={isCheckingIn}
                     className={cn(
-                      "flex w-full items-center gap-4 rounded-xl border px-4 py-3.5 text-left transition-colors",
+                      "relative flex w-full items-center gap-4 overflow-hidden rounded-xl border px-4 py-3.5 text-left",
+                      "transition-colors duration-150",
                       index === safeIndex
-                        ? "border-primary/50 bg-primary/5"
-                        : "border-border bg-card hover:border-primary/30",
-                      !member.canCheckIn && "opacity-80",
+                        ? "border-primary/55 bg-surface-2"
+                        : "border-border bg-card hover:border-border-strong",
+                      !member.canCheckIn && "border-danger/30",
+                      sweptId === member.id && "row-sweep",
                     )}
                   >
-                    <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold">
-                      {member.fullName
-                        .split(" ")
-                        .slice(0, 2)
-                        .map((part) => part[0])
-                        .join("")}
-                    </span>
+                    <MemberAvatar name={member.fullName} size="lg" />
 
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-2">
-                        <span className="truncate font-medium">{member.fullName}</span>
-                        <MembershipStatusBadge status={member.status} />
+                        <span className="truncate text-base font-medium">{member.fullName}</span>
                         {member.isInsideNow ? (
-                          <span className="rounded-full bg-primary/12 px-2 py-0.5 text-[11px] font-medium text-primary">
-                            inside
+                          <span className="inline-flex items-center gap-1 text-xs text-primary">
+                            <StatusDot tone="success" /> inside
                           </span>
                         ) : null}
                       </span>
-                      <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+
+                      <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
                         <span className="font-mono">{member.code}</span>
-                        {member.planName ? ` · ${member.planName}` : ""}
-                        {member.lastVisitAt
-                          ? ` · last visit ${formatDate(member.lastVisitAt)}`
-                          : " · never visited"}
+                        <span aria-hidden>·</span>
+                        <MembershipStatus status={member.status} className="text-xs" />
+                        {member.planName ? (
+                          <>
+                            <span aria-hidden>·</span>
+                            <span>{member.planName}</span>
+                          </>
+                        ) : null}
                       </span>
+
                       {!member.canCheckIn && member.blockedReason ? (
-                        <span className="mt-1 block text-xs text-amber-400">
+                        <span className="mt-1.5 block text-xs text-danger">
                           {member.blockedReason}
                         </span>
                       ) : null}
@@ -250,10 +298,10 @@ export function CheckInDesk() {
 
                     <span
                       className={cn(
-                        "shrink-0 rounded-lg px-3 py-2 text-sm font-medium",
+                        "shrink-0 rounded-md px-3.5 py-2 text-sm font-medium",
                         member.canCheckIn
                           ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground",
+                          : "bg-danger-subtle text-danger",
                       )}
                     >
                       {member.canCheckIn ? "Check in" : "Blocked"}
@@ -264,12 +312,13 @@ export function CheckInDesk() {
             </ul>
           )
         ) : (
-          <Card>
-            <CardContent className="flex flex-col items-center gap-2 py-14 text-center">
-              <UserRound className="size-8 text-muted-foreground/50" />
-              <p className="text-sm text-muted-foreground">
-                Start typing to find a member and check them in.
-              </p>
+          <Card className="py-0">
+            <CardContent className="px-0">
+              <EmptyState
+                icon={UserRound}
+                title="Ready when you are"
+                description="Start typing a name or member code. The first result checks in with Enter."
+              />
             </CardContent>
           </Card>
         )}
@@ -279,36 +328,45 @@ export function CheckInDesk() {
       <div className="space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">In the gym</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <StatusDot tone="success" pulse /> In the gym
+            </CardTitle>
             <CardAction>
-              <span className="rounded-full bg-primary/12 px-2.5 py-0.5 text-sm font-semibold text-primary tabular-nums">
+              <span data-numeric className="text-base font-semibold text-primary">
                 {inGym?.count ?? 0}
               </span>
             </CardAction>
           </CardHeader>
-          <CardContent className="max-h-96 overflow-y-auto">
-            {!inGym || inGym.visitors.length === 0 ? (
-              <p className="py-4 text-sm text-muted-foreground">Nobody is checked in.</p>
+          <CardContent className="max-h-80 overflow-y-auto">
+            {isRosterLoading ? (
+              <ListSkeleton rows={4} />
+            ) : !inGym || inGym.visitors.length === 0 ? (
+              <EmptyState compact title="Nobody is inside" />
             ) : (
               <ul className="divide-y divide-border">
                 {inGym.visitors.map((visitor) => (
-                  <li key={visitor.checkinId} className="flex items-center gap-2 py-2.5">
+                  <li key={visitor.checkinId} className="group/row flex items-center gap-2.5 py-2">
+                    <MemberAvatar name={visitor.fullName} size="sm" />
                     <div className="min-w-0 flex-1">
                       <Link
                         href={`/members/${visitor.memberId}`}
-                        className="block truncate text-sm font-medium hover:text-primary hover:underline"
+                        className="block truncate text-sm hover:text-primary hover:underline"
                       >
                         {visitor.fullName}
                       </Link>
-                      <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <p
+                        data-numeric
+                        className="flex items-center gap-1 text-xs text-muted-foreground"
+                      >
                         <Clock className="size-3" />
-                        <span className="tabular-nums">{visitor.minutesInside}m</span>
+                        {visitor.minutesInside}m
                       </p>
                     </div>
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="icon-sm"
                       aria-label={`Check out ${visitor.fullName}`}
+                      className="opacity-0 transition-opacity group-hover/row:opacity-100 group-focus-within/row:opacity-100"
                       onClick={async () => {
                         try {
                           await checkOut({ checkinId: visitor.checkinId }).unwrap();
@@ -318,7 +376,7 @@ export function CheckInDesk() {
                         }
                       }}
                     >
-                      <LogOut className="size-3.5" />
+                      <LogOut />
                     </Button>
                   </li>
                 ))}
@@ -329,29 +387,27 @@ export function CheckInDesk() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Recent activity</CardTitle>
+            <CardTitle>This session</CardTitle>
           </CardHeader>
           <CardContent>
             {feed.length === 0 ? (
-              <p className="py-2 text-sm text-muted-foreground">
-                Check-ins from this session appear here.
-              </p>
+              <EmptyState compact title="Nothing yet" description="Check-ins appear here." />
             ) : (
               <ul className="space-y-2.5">
                 {feed.map((event) => (
                   <li key={event.id} className="flex items-start gap-2.5 text-sm">
-                    <span
-                      className={cn(
-                        "mt-1.5 size-1.5 shrink-0 rounded-full",
+                    <StatusDot
+                      tone={
                         event.kind === "success"
-                          ? "bg-primary"
+                          ? "success"
                           : event.kind === "blocked"
-                            ? "bg-destructive"
-                            : "bg-sky-400",
-                      )}
+                            ? "danger"
+                            : "info"
+                      }
+                      className="mt-1.5"
                     />
                     <span className="min-w-0">
-                      <span className="block truncate font-medium">{event.memberName}</span>
+                      <span className="block truncate">{event.memberName}</span>
                       <span className="block truncate text-xs text-muted-foreground">
                         {event.message}
                       </span>
@@ -367,35 +423,14 @@ export function CheckInDesk() {
   );
 }
 
-function Banner({
-  tone,
-  icon: Icon,
-  title,
-  children,
-}: {
-  tone: "success" | "error" | "info";
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  children: React.ReactNode;
-}) {
-  const tones = {
-    success: "border-primary/40 bg-primary/8 text-primary",
-    error: "border-destructive/40 bg-destructive/8 text-destructive",
-    info: "border-sky-500/40 bg-sky-500/8 text-sky-400",
-  };
-
+function Key({ children }: { children: React.ReactNode }) {
   return (
-    <div className={cn("flex items-start gap-3 rounded-xl border px-4 py-3", tones[tone])}>
-      <Icon className="mt-0.5 size-5 shrink-0" />
-      <div className="min-w-0">
-        <p className="font-medium">{title}</p>
-        <p className="mt-0.5 text-sm text-foreground/80">{children}</p>
-      </div>
-    </div>
+    <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded border border-border bg-surface-2 px-1.5 font-sans text-2xs text-muted-foreground">
+      {children}
+    </kbd>
   );
 }
 
-/** Keeps the desk from firing a search on every keystroke. */
 function useDebounced(value: string, delay: number): string {
   const [debounced, setDebounced] = useState(value);
 
@@ -405,12 +440,4 @@ function useDebounced(value: string, delay: number): string {
   }, [value, delay]);
 
   return debounced;
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    timeZone: "UTC",
-  });
 }

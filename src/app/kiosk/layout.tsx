@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { ThemeProvider } from "@/presentation/components/theme/theme-provider";
 import { StoreProvider } from "@/presentation/store/store-provider";
 
 export const metadata: Metadata = {
@@ -12,5 +13,11 @@ export const metadata: Metadata = {
  * fullscreen screen paired to a device token.
  */
 export default function KioskLayout({ children }: { children: React.ReactNode }) {
-  return <StoreProvider>{children}</StoreProvider>;
+  // Always dark — this is a wall-mounted screen in a gym, not a themed app
+  // surface, and it must stay legible from across the room.
+  return (
+    <ThemeProvider forcedTheme="dark">
+      <StoreProvider>{children}</StoreProvider>
+    </ThemeProvider>
+  );
 }

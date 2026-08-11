@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertTriangle, Camera, CameraOff, CheckCircle2, Delete, Loader2 } from "lucide-react";
+import { AlertTriangle, Camera, CameraOff, Check, Delete, Loader2 } from "lucide-react";
 
 import type { CheckInResultDto } from "@/application/dto/checkin.dto";
-import { GymFlowLogo } from "@/presentation/components/brand/logo";
+import { GymFlowIcon, GymFlowLogo } from "@/presentation/components/brand/logo";
 import { Button } from "@/presentation/components/ui/button";
 import { Input } from "@/presentation/components/ui/input";
 import { cn } from "@/presentation/lib/utils";
@@ -30,9 +30,10 @@ const KEYPAD = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 /**
  * Fullscreen self-service check-in.
  *
- * The screen is unattended, so it authenticates with a device token rather than
- * a user session and can only ever create a check-in. QR scanning uses the
- * browser's built-in BarcodeDetector when available; the keypad always works.
+ * Everything here is sized to be read from a metre and a half away and hit with
+ * a thumb: 72px result type, 96px keypad targets. The screen is unattended, so
+ * it authenticates with a device token rather than a session and can only ever
+ * create a check-in.
  */
 export function KioskScreen({ gymName }: { gymName: string }) {
   const dispatch = useAppDispatch();
@@ -63,7 +64,7 @@ export function KioskScreen({ gymName }: { gymName: string }) {
     [checkIn, deviceToken, dispatch],
   );
 
-  // Clear the result screen so the next person sees a fresh keypad.
+  // Clear the result so the next person meets a fresh keypad.
   useEffect(() => {
     if (stage !== "result") return;
 
@@ -101,14 +102,14 @@ export function KioskScreen({ gymName }: { gymName: string }) {
   }
 
   return (
-    <main className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden px-6 py-10">
+    <main className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-background px-6 py-10">
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-56 left-1/2 size-[40rem] -translate-x-1/2 rounded-full bg-primary/12 blur-3xl"
+        className="pointer-events-none absolute -top-64 left-1/2 size-[46rem] -translate-x-1/2 rounded-full bg-primary/[0.09] blur-3xl"
       />
 
-      <header className="absolute top-6 left-1/2 -translate-x-1/2">
-        <GymFlowLogo iconClassName="size-9" wordmarkClassName="text-2xl" />
+      <header className="absolute top-8 left-1/2 -translate-x-1/2">
+        <GymFlowLogo iconClassName="size-8" wordmarkClassName="text-xl" />
       </header>
 
       <button
@@ -117,7 +118,7 @@ export function KioskScreen({ gymName }: { gymName: string }) {
           window.localStorage.removeItem(TOKEN_STORAGE_KEY);
           dispatch(deviceUnpaired());
         }}
-        className="absolute top-6 right-6 text-xs text-muted-foreground/50 hover:text-muted-foreground"
+        className="absolute top-8 right-8 text-xs text-muted-foreground/40 transition-colors hover:text-muted-foreground"
       >
         Unpair
       </button>
@@ -126,28 +127,36 @@ export function KioskScreen({ gymName }: { gymName: string }) {
         <ResultPanel
           result={result}
           error={error}
-          onDismiss={() => dispatch(kioskReset())}
           gymName={gymName}
+          onDismiss={() => dispatch(kioskReset())}
         />
       ) : (
         <div className="relative z-10 w-full max-w-md text-center">
-          <h1 className="text-3xl font-semibold tracking-tight">Welcome to {gymName}</h1>
-          <p className="mt-2 text-muted-foreground">
-            Enter your member code or scan the QR on your card.
+          {/* Idle: the mark breathes so the screen reads as awake, not frozen. */}
+          {stage === "idle" ? (
+            <GymFlowIcon className="mx-auto mb-6 size-14 animate-[var(--animate-breathe)]" />
+          ) : (
+            <div className="mb-6 h-14" />
+          )}
+
+          <h1 className="text-xl font-semibold tracking-tight">Welcome to {gymName}</h1>
+          <p className="mt-2 text-base text-muted-foreground">
+            Enter your member code, or scan the QR on your card.
           </p>
 
           <div
-            className="mx-auto mt-8 flex h-20 items-center justify-center gap-2"
+            className="mx-auto mt-9 flex h-20 items-center justify-center gap-2.5"
             aria-live="polite"
             aria-label={`Code entered: ${code || "none"}`}
           >
             {Array.from({ length: 6 }).map((_, index) => (
               <span
                 key={index}
+                data-numeric
                 className={cn(
-                  "flex size-12 items-center justify-center rounded-xl border-2 text-2xl font-semibold tabular-nums transition-colors",
+                  "flex size-14 items-center justify-center rounded-lg border-2 text-xl font-semibold transition-colors duration-150",
                   code[index]
-                    ? "border-primary bg-primary/10 text-primary"
+                    ? "border-primary bg-brand-subtle text-primary"
                     : "border-border text-muted-foreground/30",
                 )}
               >
@@ -156,7 +165,7 @@ export function KioskScreen({ gymName }: { gymName: string }) {
             ))}
           </div>
 
-          <div className="mx-auto mt-6 grid w-64 grid-cols-3 gap-3">
+          <div className="mx-auto mt-8 grid w-80 grid-cols-3 gap-3">
             {KEYPAD.map((digit) => (
               <KeypadButton key={digit} onClick={() => dispatch(digitPressed(digit))}>
                 {digit}
@@ -164,26 +173,23 @@ export function KioskScreen({ gymName }: { gymName: string }) {
             ))}
 
             <KeypadButton
+              muted
               onClick={() => dispatch(scannerActivated(!scannerActive))}
               aria-label={scannerActive ? "Stop scanning" : "Scan QR code"}
             >
-              {scannerActive ? (
-                <CameraOff className="size-5" />
-              ) : (
-                <Camera className="size-5" />
-              )}
+              {scannerActive ? <CameraOff className="size-6" /> : <Camera className="size-6" />}
             </KeypadButton>
 
             <KeypadButton onClick={() => dispatch(digitPressed("0"))}>0</KeypadButton>
 
-            <KeypadButton onClick={() => dispatch(digitRemoved())} aria-label="Delete">
-              <Delete className="size-5" />
+            <KeypadButton muted onClick={() => dispatch(digitRemoved())} aria-label="Delete">
+              <Delete className="size-6" />
             </KeypadButton>
           </div>
 
           <Button
-            size="lg"
-            className="mt-6 h-14 w-64 text-base"
+            size="xl"
+            className="mt-7 h-16 w-80 text-base"
             disabled={code.length === 0 || isLoading}
             onClick={() => void submit(code, "code")}
           >
@@ -201,7 +207,7 @@ export function KioskScreen({ gymName }: { gymName: string }) {
                 dispatch(scannerActivated(false));
                 dispatch(
                   kioskCheckInFailed(
-                    "This browser cannot scan QR codes. Type your member code instead.",
+                    "This device cannot scan QR codes. Type your member code instead.",
                   ),
                 );
               }}
@@ -215,14 +221,20 @@ export function KioskScreen({ gymName }: { gymName: string }) {
 
 function KeypadButton({
   children,
-  onClick,
+  muted = false,
   ...rest
-}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { muted?: boolean }) {
   return (
     <button
       type="button"
-      onClick={onClick}
-      className="flex h-16 items-center justify-center rounded-xl border border-border bg-card text-xl font-medium transition-colors hover:border-primary/50 hover:bg-primary/5 active:scale-95"
+      className={cn(
+        "flex h-20 items-center justify-center rounded-xl border text-xl font-medium",
+        "transition-[background-color,border-color,transform] duration-150 ease-[var(--ease-out-quick)]",
+        "hover:border-primary/50 hover:bg-surface-2 active:scale-95",
+        muted
+          ? "border-border bg-transparent text-muted-foreground"
+          : "border-border bg-surface-1 text-foreground",
+      )}
       {...rest}
     >
       {children}
@@ -233,21 +245,25 @@ function KeypadButton({
 function ResultPanel({
   result,
   error,
-  onDismiss,
   gymName,
+  onDismiss,
 }: {
   result: CheckInResultDto | null;
   error: string | null;
-  onDismiss: () => void;
   gymName: string;
+  onDismiss: () => void;
 }) {
   if (error) {
     return (
-      <div className="relative z-10 max-w-md text-center">
-        <AlertTriangle className="mx-auto size-16 text-amber-400" />
-        <h1 className="mt-5 text-3xl font-semibold tracking-tight">Please see the front desk</h1>
-        <p className="mt-3 text-lg text-muted-foreground">{error}</p>
-        <Button size="lg" variant="outline" className="mt-8" onClick={onDismiss}>
+      <div className="relative z-10 max-w-lg text-center">
+        <span className="mx-auto flex size-20 items-center justify-center rounded-full bg-danger-subtle">
+          <AlertTriangle className="size-10 text-danger" />
+        </span>
+        <h1 className="mt-7 text-2xl font-semibold tracking-tight">
+          Please see the front desk
+        </h1>
+        <p className="mt-3 text-base text-muted-foreground">{error}</p>
+        <Button size="xl" variant="secondary" className="mt-9" onClick={onDismiss}>
           Try again
         </Button>
       </div>
@@ -256,25 +272,42 @@ function ResultPanel({
 
   if (!result) return null;
 
+  const firstName = result.member.fullName.split(" ")[0] ?? result.member.fullName;
+
   return (
-    <div className="relative z-10 max-w-md text-center">
-      <CheckCircle2 className="mx-auto size-16 text-primary" />
-      <h1 className="mt-5 text-3xl font-semibold tracking-tight">
-        {result.outcome === "already_inside"
-          ? `You are already in, ${firstName(result.member.fullName)}`
-          : `You're in, ${firstName(result.member.fullName)}`}
+    <div className="relative z-10 max-w-2xl animate-[var(--animate-check-in)] text-center">
+      <span className="mx-auto flex size-20 items-center justify-center rounded-full bg-success text-success-foreground">
+        <Check className="size-11" strokeWidth={2.5} />
+      </span>
+
+      {/* The one 72px moment in the app. */}
+      <h1 className="mt-8 text-4xl font-semibold tracking-tight text-balance">
+        {result.outcome === "already_inside" ? (
+          <>
+            You&apos;re already in,
+            <br />
+            <span className="text-primary">{firstName}</span>
+          </>
+        ) : (
+          <>
+            Welcome back,
+            <br />
+            <span className="text-primary">{firstName}</span>
+          </>
+        )}
       </h1>
-      <p className="mt-2 text-lg text-muted-foreground">
+
+      <p className="mt-5 text-lg text-muted-foreground">
         Have a great session at {gymName}.
       </p>
 
       {result.warnings.length > 0 ? (
-        <p className="mt-5 rounded-lg border border-amber-500/40 bg-amber-500/8 px-4 py-2.5 text-sm text-amber-400">
+        <p className="mx-auto mt-7 max-w-md rounded-lg border border-warning/40 bg-warning-subtle px-4 py-3 text-base text-warning">
           {result.warnings.join(" ")}
         </p>
       ) : null}
 
-      <Button size="lg" variant="outline" className="mt-8" onClick={onDismiss}>
+      <Button size="lg" variant="ghost" className="mt-9" onClick={onDismiss}>
         Done
       </Button>
     </div>
@@ -291,19 +324,23 @@ function PairingScreen({
   onSubmit: () => void;
 }) {
   return (
-    <main className="flex min-h-dvh items-center justify-center px-6">
+    <main className="flex min-h-dvh items-center justify-center bg-background px-6">
       <form
-        className="w-full max-w-sm space-y-5 text-center"
+        className="w-full max-w-sm space-y-6 text-center"
         onSubmit={(event) => {
           event.preventDefault();
           onSubmit();
         }}
       >
-        <GymFlowLogo className="justify-center" iconClassName="size-10" wordmarkClassName="text-2xl" />
+        <GymFlowLogo
+          className="justify-center"
+          iconClassName="size-9"
+          wordmarkClassName="text-xl"
+        />
 
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">Pair this kiosk</h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">
+        <div className="space-y-1.5">
+          <h1 className="text-lg font-semibold tracking-tight">Pair this kiosk</h1>
+          <p className="text-sm text-muted-foreground">
             Paste the device token from Settings → Kiosks. It is stored on this device only.
           </p>
         </div>
@@ -313,7 +350,7 @@ function PairingScreen({
           onChange={(event) => onChange(event.target.value)}
           placeholder="gfk_…"
           aria-label="Kiosk device token"
-          className="text-center font-mono"
+          className="h-12 text-center font-mono"
         />
 
         <Button type="submit" size="lg" className="w-full" disabled={!value.trim()}>
@@ -327,9 +364,9 @@ function PairingScreen({
 /**
  * Camera scanning via the platform BarcodeDetector.
  *
- * No third-party decoder: the browsers that run an unattended kiosk (Chrome on
- * Android/ChromeOS, Edge) ship it natively, and the keypad covers everything
- * else — which is why an unsupported browser falls back instead of failing.
+ * No third-party decoder: the browsers that run an unattended kiosk ship it
+ * natively, and the keypad covers everything else — which is why an unsupported
+ * browser falls back rather than failing.
  */
 function QrScanner({
   onDetected,
@@ -339,13 +376,15 @@ function QrScanner({
   onUnsupported: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [message, setMessage] = useState("Point the QR code at the camera…");
+  const [message, setMessage] = useState("Hold the QR code up to the camera…");
 
   useEffect(() => {
     const DetectorCtor = (
-      window as unknown as { BarcodeDetector?: new (options: { formats: string[] }) => {
-        detect(source: CanvasImageSource): Promise<Array<{ rawValue: string }>>;
-      } }
+      window as unknown as {
+        BarcodeDetector?: new (options: { formats: string[] }) => {
+          detect(source: CanvasImageSource): Promise<Array<{ rawValue: string }>>;
+        };
+      }
     ).BarcodeDetector;
 
     if (!DetectorCtor || !navigator.mediaDevices?.getUserMedia) {
@@ -404,18 +443,14 @@ function QrScanner({
   }, [onDetected, onUnsupported]);
 
   return (
-    <div className="mt-6">
+    <div className="mt-8">
       <video
         ref={videoRef}
         muted
         playsInline
-        className="mx-auto aspect-square w-64 rounded-2xl border-2 border-primary/40 object-cover"
+        className="mx-auto aspect-square w-72 rounded-2xl border-2 border-primary/50 object-cover"
       />
-      <p className="mt-2 text-sm text-muted-foreground">{message}</p>
+      <p className="mt-3 text-base text-muted-foreground">{message}</p>
     </div>
   );
-}
-
-function firstName(fullName: string): string {
-  return fullName.split(" ")[0] ?? fullName;
 }

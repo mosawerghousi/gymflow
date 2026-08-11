@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
-  Activity,
   ArrowRight,
   CalendarClock,
+  Clock3,
   ScanLine,
   TrendingDown,
   UserPlus,
@@ -12,9 +12,13 @@ import {
 
 import { requireActor } from "@/composition/auth";
 import { useCases } from "@/composition/use-cases";
-import { MembershipStatusBadge } from "@/presentation/components/shared/status-badge";
-import { StatCard } from "@/presentation/components/shared/stat-card";
+import { CheckinSparkline } from "@/presentation/components/dashboard/checkin-sparkline";
+import { HeroMetric } from "@/presentation/components/dashboard/hero-metric";
 import { PageHeader } from "@/presentation/components/layout/page-header";
+import { MemberAvatar } from "@/presentation/components/shared/member-avatar";
+import { StatCard } from "@/presentation/components/shared/stat-card";
+import { EmptyState } from "@/presentation/components/shared/states";
+import { MembershipStatus } from "@/presentation/components/shared/status-badge";
 import { Button } from "@/presentation/components/ui/button";
 import {
   Card,
@@ -29,267 +33,344 @@ export const metadata: Metadata = { title: "Dashboard" };
 export const dynamic = "force-dynamic";
 
 /**
- * The landing screen.
+ * The "is the gym okay right now?" screen.
  *
- * This is a read-only overview, so it fetches on the server and renders as a
- * Server Component — no store hydration needed. The interactive screens
- * (desk, schedule, reports) are the ones that go through RTK Query.
+ * Laid out on a modified F-pattern: the live occupancy counter sits top-left
+ * where the eye lands, supporting metrics run across, and everything below is
+ * a shortlist that drills down on click rather than a full table on load.
  */
 export default async function DashboardPage() {
   const actor = await requireActor();
   const now = new Date();
 
-  const weekFrom = new Date(now);
-  weekFrom.setUTCHours(0, 0, 0, 0);
-  const weekTo = new Date(weekFrom.getTime() + 7 * 86_400_000);
+  const dayStart = new Date(now);
+  dayStart.setUTCHours(0, 0, 0, 0);
+  const weekEnd = new Date(dayStart.getTime() + 7 * 86_400_000);
 
   const canSeeReports = actor.can("reports:read:limited");
 
-  const [overview, inGym, schedule, atRisk] = await Promise.all([
+  const [overview, trends, inGym, schedule, atRisk, expiring] = await Promise.all([
     canSeeReports ? useCases.getReportOverview(actor, { days: 30 }) : Promise.resolve(null),
+    canSeeReports ? useCases.getTrends(actor, { days: 14 }) : Promise.resolve(null),
     actor.can("checkins:read")
       ? useCases.getCurrentlyInGym(actor)
       : Promise.resolve({ count: 0, visitors: [] }),
     useCases.getSchedule(actor, {
-      from: weekFrom,
-      to: weekTo,
+      from: dayStart,
+      to: weekEnd,
       mine: actor.role === "trainer",
     }),
     canSeeReports
       ? useCases.getAtRiskMembers(actor, { inactiveDays: 30, limit: 5 })
       : Promise.resolve([]),
+    actor.can("members:read")
+      ? useCases.listMembers(actor, {
+          page: 1,
+          pageSize: 5,
+          sort: "expiring",
+          status: "active",
+          includeDeleted: false,
+        })
+      : Promise.resolve(null),
   ]);
 
-  const upcomingShifts = schedule.shifts
-    .filter((shift) => shift.status !== "cancelled" && new Date(shift.endsAt) > now)
+  const todaysShifts = schedule.shifts
+    .filter((shift) => shift.status !== "cancelled" && new Date(shift.startsAt) < weekEnd)
+    .filter((shift) => new Date(shift.endsAt) > now)
     .slice(0, 5);
 
-  const upcomingSessions = schedule.sessions
-    .filter((session) => session.status === "booked" && new Date(session.endsAt) > now)
-    .slice(0, 5);
+  const expiringSoon = (expiring?.items ?? []).filter(
+    (member) => member.daysUntilExpiry !== null && member.daysUntilExpiry <= 14,
+  );
 
   return (
     <>
       <PageHeader
         title={`Good ${greeting(now)}, ${actor.name.split(" ")[0]}`}
-        description={`Here is how the gym is running as of ${formatTime(now)} UTC.`}
+        description="Live occupancy, this week's roster, and who needs a call."
         actions={
           actor.can("checkins:write") ? (
             <Button asChild>
               <Link href="/checkin">
-                <ScanLine /> Open check-in desk
+                <ScanLine /> Check-in desk
               </Link>
             </Button>
           ) : null
         }
       />
 
-      <div className="space-y-6 px-5 py-6 sm:px-8">
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard
-            label="Currently in gym"
-            value={inGym.count}
-            hint={inGym.count === 1 ? "member checked in" : "members checked in"}
-            icon={Activity}
-          />
+      <div className="space-y-5 px-5 pb-10 sm:px-8">
+        {/* Row 1 — hero metric, then the supporting numbers. */}
+        <section className="grid gap-4 lg:grid-cols-4">
+          <HeroMetric initial={inGym} />
 
           {overview ? (
             <>
               <StatCard
                 label="Active members"
                 value={overview.membership.active}
-                hint={`${overview.membership.total} total on file`}
+                hint={`${overview.membership.total} on file`}
                 icon={Users}
               />
               <StatCard
-                label="Sign-ups (30d)"
+                label="Sign-ups · 30d"
                 value={overview.signups.value}
                 changePct={overview.signups.changePct}
                 hint="vs. previous 30 days"
                 icon={UserPlus}
               />
-              <StatCard
-                label="Cancellations (30d)"
-                value={overview.churn.value}
-                changePct={overview.churn.changePct}
-                invertTrend
-                hint={`${overview.churnRatePct.toFixed(1)}% churn rate`}
-                icon={TrendingDown}
-              />
             </>
           ) : (
             <StatCard
-              label="Your sessions this week"
-              value={upcomingSessions.length}
-              hint="booked and still upcoming"
+              label="Your sessions"
+              value={schedule.sessions.filter((s) => s.status === "booked").length}
+              hint="booked this week"
               icon={CalendarClock}
+              className="lg:col-span-2"
             />
           )}
         </section>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Who is in the gym right now */}
-          <Card className="lg:col-span-1">
+        {/* Row 2 — the week's shape. */}
+        <section className="grid gap-4 lg:grid-cols-3">
+          {trends ? (
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Check-ins, last 14 days</CardTitle>
+                <CardDescription>
+                  {describeTrend(trends.checkins)}
+                </CardDescription>
+                <CardAction>
+                  <Button asChild variant="ghost" size="sm">
+                    <Link href="/reports">
+                      Reports <ArrowRight />
+                    </Link>
+                  </Button>
+                </CardAction>
+              </CardHeader>
+              <CardContent>
+                <CheckinSparkline data={trends.checkins} />
+              </CardContent>
+            </Card>
+          ) : null}
+
+          <Card className={trends ? "" : "lg:col-span-3"}>
             <CardHeader>
-              <CardTitle className="text-base">In the gym now</CardTitle>
+              <CardTitle>On shift</CardTitle>
+              <CardDescription>Still to come this week.</CardDescription>
               <CardAction>
-                <span className="rounded-full bg-primary/12 px-2.5 py-0.5 text-xs font-semibold text-primary tabular-nums">
-                  {inGym.count}
-                </span>
+                <Button asChild variant="ghost" size="sm">
+                  <Link href="/schedule">
+                    <ArrowRight />
+                  </Link>
+                </Button>
               </CardAction>
             </CardHeader>
             <CardContent>
-              {inGym.visitors.length === 0 ? (
-                <EmptyLine>Nobody is checked in right now.</EmptyLine>
+              {todaysShifts.length === 0 ? (
+                <EmptyState
+                  compact
+                  icon={Clock3}
+                  title="Nothing scheduled"
+                  description="No upcoming shifts in the next seven days."
+                />
               ) : (
-                <ul className="divide-y divide-border">
-                  {inGym.visitors.slice(0, 8).map((visitor) => (
-                    <li
-                      key={visitor.checkinId}
-                      className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">{visitor.fullName}</p>
-                        <p className="font-mono text-xs text-muted-foreground">
-                          {visitor.memberCode}
+                <ul className="space-y-2.5">
+                  {todaysShifts.map((shift) => (
+                    <li key={shift.id} className="flex items-center gap-2.5">
+                      <MemberAvatar name={shift.userName} size="sm" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm">{shift.userName}</p>
+                        <p data-numeric className="text-xs text-muted-foreground">
+                          {formatDayTime(shift.startsAt)} – {formatTime(shift.endsAt)}
                         </p>
                       </div>
-                      <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-                        {visitor.minutesInside}m
-                      </span>
                     </li>
                   ))}
                 </ul>
               )}
             </CardContent>
           </Card>
+        </section>
 
-          {/* This week's roster */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-base">Coming up this week</CardTitle>
-              <CardAction>
-                <Button asChild variant="ghost" size="sm">
-                  <Link href="/schedule">
-                    Schedule <ArrowRight />
-                  </Link>
-                </Button>
-              </CardAction>
-            </CardHeader>
-            <CardContent className="grid gap-6 sm:grid-cols-2">
-              <div>
-                <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Shifts
-                </p>
-                {upcomingShifts.length === 0 ? (
-                  <EmptyLine>No shifts scheduled.</EmptyLine>
+        {/* Row 3 — the two lists worth acting on. */}
+        {canSeeReports ? (
+          <section className="grid gap-4 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Expiring soon</CardTitle>
+                <CardDescription>Active plans ending in the next two weeks.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {expiringSoon.length === 0 ? (
+                  <EmptyState
+                    compact
+                    icon={CalendarClock}
+                    title="Nothing expiring"
+                    description="No active membership ends in the next fortnight."
+                  />
                 ) : (
-                  <ul className="space-y-2">
-                    {upcomingShifts.map((shift) => (
-                      <li key={shift.id} className="text-sm">
-                        <span className="font-medium">{shift.userName}</span>
-                        <span className="block text-xs text-muted-foreground tabular-nums">
-                          {formatDayTime(shift.startsAt)} – {formatTime(new Date(shift.endsAt))}
+                  <ul className="divide-y divide-border">
+                    {expiringSoon.map((member) => (
+                      <li key={member.id} className="flex items-center gap-3 py-2.5 first:pt-0">
+                        <MemberAvatar name={member.fullName} size="sm" />
+                        <div className="min-w-0 flex-1">
+                          <Link
+                            href={`/members/${member.id}`}
+                            className="block truncate text-sm hover:text-primary hover:underline"
+                          >
+                            {member.fullName}
+                          </Link>
+                          <p className="font-mono text-2xs text-muted-foreground">
+                            {member.code}
+                          </p>
+                        </div>
+                        <span
+                          data-numeric
+                          className={
+                            (member.daysUntilExpiry ?? 0) <= 3
+                              ? "shrink-0 text-xs font-medium text-warning"
+                              : "shrink-0 text-xs text-muted-foreground"
+                          }
+                        >
+                          {member.daysUntilExpiry === 0
+                            ? "today"
+                            : `${member.daysUntilExpiry}d`}
                         </span>
                       </li>
                     ))}
                   </ul>
                 )}
-              </div>
+              </CardContent>
+            </Card>
 
-              <div>
-                <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Trainer sessions
-                </p>
-                {upcomingSessions.length === 0 ? (
-                  <EmptyLine>No sessions booked.</EmptyLine>
+            <Card>
+              <CardHeader>
+                <CardTitle>At risk</CardTitle>
+                <CardDescription>Paid up, but no visit in 30 days.</CardDescription>
+                <CardAction>
+                  <Button asChild variant="ghost" size="sm">
+                    <Link href="/reports">
+                      <ArrowRight />
+                    </Link>
+                  </Button>
+                </CardAction>
+              </CardHeader>
+              <CardContent>
+                {atRisk.length === 0 ? (
+                  <EmptyState
+                    compact
+                    icon={Users}
+                    title="Everyone is showing up"
+                    description="No active member has been away for 30 days."
+                  />
                 ) : (
-                  <ul className="space-y-2">
-                    {upcomingSessions.map((session) => (
-                      <li key={session.id} className="text-sm">
-                        <span className="font-medium">{session.memberName}</span>
-                        <span className="block text-xs text-muted-foreground tabular-nums">
-                          {formatDayTime(session.startsAt)} · {session.trainerName}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {atRisk.length > 0 ? (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">At-risk members</CardTitle>
-              <CardDescription>Paid up, but not through the door in 30 days.</CardDescription>
-              <CardAction>
-                <Button asChild variant="ghost" size="sm">
-                  <Link href="/reports">
-                    All reports <ArrowRight />
-                  </Link>
-                </Button>
-              </CardAction>
-            </CardHeader>
-            <CardContent>
-              <ul className="divide-y divide-border">
-                {atRisk.map((member) => (
-                  <li
-                    key={member.memberId}
-                    className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0"
-                  >
-                    <div className="min-w-0">
-                      <Link
-                        href={`/members/${member.memberId}`}
-                        className="truncate text-sm font-medium hover:text-primary hover:underline"
+                  <ul className="divide-y divide-border">
+                    {atRisk.map((member) => (
+                      <li
+                        key={member.memberId}
+                        className="flex items-center gap-3 py-2.5 first:pt-0"
                       >
-                        {member.fullName}
-                      </Link>
-                      <p className="font-mono text-xs text-muted-foreground">
-                        {member.memberCode}
-                      </p>
-                    </div>
-                    <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-                      {member.daysSinceLastVisit === null
-                        ? "never visited"
-                        : `${member.daysSinceLastVisit} days ago`}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
+                        <MemberAvatar name={member.fullName} size="sm" />
+                        <div className="min-w-0 flex-1">
+                          <Link
+                            href={`/members/${member.memberId}`}
+                            className="block truncate text-sm hover:text-primary hover:underline"
+                          >
+                            {member.fullName}
+                          </Link>
+                          <p className="font-mono text-2xs text-muted-foreground">
+                            {member.memberCode}
+                          </p>
+                        </div>
+                        <span data-numeric className="shrink-0 text-xs text-muted-foreground">
+                          {member.daysSinceLastVisit === null
+                            ? "never"
+                            : `${member.daysSinceLastVisit}d ago`}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          </section>
         ) : null}
 
         {overview ? (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Membership mix</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-3">
-              {(["active", "frozen", "expired", "cancelled"] as const).map((status) => (
-                <div
-                  key={status}
-                  className="flex min-w-32 flex-1 items-center justify-between gap-3 rounded-lg border border-border px-3 py-2.5"
-                >
-                  <MembershipStatusBadge status={status} />
-                  <span className="text-lg font-semibold tabular-nums">
-                    {overview.membership[status]}
-                  </span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+          <section>
+            <Card>
+              <CardHeader>
+                <CardTitle>Membership mix</CardTitle>
+                <CardDescription>
+                  {overview.membership.active} of {overview.membership.total} on file are active.
+                </CardDescription>
+                <CardAction>
+                  <StatCardInline
+                    label="Cancellations · 30d"
+                    value={overview.churn.value}
+                    icon={TrendingDown}
+                  />
+                </CardAction>
+              </CardHeader>
+              <CardContent className="grid gap-3 sm:grid-cols-4">
+                {(["active", "frozen", "expired", "cancelled"] as const).map((status) => (
+                  <Link
+                    key={status}
+                    href={`/members?status=${status}`}
+                    className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2.5 transition-colors duration-150 hover:border-border-strong hover:bg-surface-2"
+                  >
+                    <MembershipStatus status={status} className="text-xs" />
+                    <span data-numeric className="text-base font-semibold">
+                      {overview.membership[status]}
+                    </span>
+                  </Link>
+                ))}
+              </CardContent>
+            </Card>
+          </section>
         ) : null}
       </div>
     </>
   );
 }
 
-function EmptyLine({ children }: { children: React.ReactNode }) {
-  return <p className="py-3 text-sm text-muted-foreground">{children}</p>;
+function StatCardInline({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value: number;
+  icon: typeof TrendingDown;
+}) {
+  return (
+    <span className="flex items-center gap-2 text-xs text-muted-foreground">
+      <Icon className="size-3.5" />
+      {label}
+      <span data-numeric className="font-semibold text-foreground">
+        {value}
+      </span>
+    </span>
+  );
+}
+
+/** The one-line insight that sits under a chart title. */
+function describeTrend(points: Array<{ count: number }>): string {
+  if (points.length < 4) return "Not enough history yet.";
+
+  const half = Math.floor(points.length / 2);
+  const earlier = points.slice(0, half).reduce((sum, p) => sum + p.count, 0);
+  const later = points.slice(half).reduce((sum, p) => sum + p.count, 0);
+  const total = earlier + later;
+
+  if (earlier === 0) return `${total} visits so far.`;
+
+  const change = Math.round(((later - earlier) / earlier) * 100);
+
+  if (Math.abs(change) < 5) return `${total} visits, holding steady week on week.`;
+
+  return `${total} visits — ${Math.abs(change)}% ${change > 0 ? "busier" : "quieter"} than the week before.`;
 }
 
 function greeting(now: Date): string {
@@ -299,12 +380,11 @@ function greeting(now: Date): string {
   return "evening";
 }
 
-function formatTime(date: Date): string {
-  return date.toISOString().slice(11, 16);
+function formatTime(iso: string): string {
+  return new Date(iso).toISOString().slice(11, 16);
 }
 
 function formatDayTime(iso: string): string {
   const date = new Date(iso);
-  const day = date.toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" });
-  return `${day} ${date.toISOString().slice(11, 16)}`;
+  return `${date.toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" })} ${formatTime(iso)}`;
 }
