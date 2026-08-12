@@ -15,6 +15,32 @@
    a raw colour.
    ========================================================================== */
 
+/*
+ * The type scale lives in a plain `@theme` (not `inline`) so the utilities emit
+ * `var(--text-*)` and the Arabic-script override below can redefine them once,
+ * at the root, instead of multiplying sizes down the tree.
+ */
+@theme {
+  --text-2xs: 0.6875rem;   /* 11px — dense table meta only */
+  --text-2xs--line-height: 1rem;
+  --text-xs: 0.75rem;      /* 12 */
+  --text-xs--line-height: 1.125rem;
+  --text-sm: 0.875rem;     /* 14 — body default */
+  --text-sm--line-height: 1.375rem;
+  --text-base: 1rem;       /* 16 */
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.25rem;      /* 20 */
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.5rem;       /* 24 */
+  --text-xl--line-height: 2rem;
+  --text-2xl: 2rem;        /* 32 */
+  --text-2xl--line-height: 2.375rem;
+  --text-3xl: 3rem;        /* 48 — hero metric / kiosk only */
+  --text-3xl--line-height: 1;
+  --text-4xl: 4.5rem;      /* 72 — kiosk only */
+  --text-4xl--line-height: 1;
+}
+
 @theme inline {
   /* --- Surfaces & text ------------------------------------------------- */
   --color-background: var(--surface-0);
@@ -74,25 +100,6 @@
   --color-sidebar-foreground: var(--text-secondary);
   --color-sidebar-border: var(--line);
 
-  /* --- Type scale: 12 / 14 / 16 / 20 / 24 / 32, and nothing else -------- */
-  --text-2xs: 0.6875rem;   /* 11px — dense table meta only */
-  --text-2xs--line-height: 1rem;
-  --text-xs: 0.75rem;      /* 12 */
-  --text-xs--line-height: 1.125rem;
-  --text-sm: 0.875rem;     /* 14 — body default */
-  --text-sm--line-height: 1.375rem;
-  --text-base: 1rem;       /* 16 */
-  --text-base--line-height: 1.5rem;
-  --text-lg: 1.25rem;      /* 20 */
-  --text-lg--line-height: 1.75rem;
-  --text-xl: 1.5rem;       /* 24 */
-  --text-xl--line-height: 2rem;
-  --text-2xl: 2rem;        /* 32 */
-  --text-2xl--line-height: 2.375rem;
-  --text-3xl: 3rem;        /* 48 — hero metric / kiosk only */
-  --text-3xl--line-height: 1;
-  --text-4xl: 4.5rem;      /* 72 — kiosk only */
-  --text-4xl--line-height: 1;
 
   /* Latin leads; the Arabic faces sit behind it so a mixed string never breaks. */
   --font-sans: var(--font-latin), var(--font-vazirmatn), var(--font-noto-arabic),
@@ -191,43 +198,7 @@
   --chart-grey-3: oklch(0.42 0.016 258);
 }
 
-/* --------------------------------------------------------------------------
-   Arabic script sizing
-   --------------------------------------------------------------------------
-   Arabic-script glyphs read visually smaller than Latin at the same point
-   size, and carry taller ascenders and deeper descenders. Both locales get a
-   modest size bump and extra leading rather than a different type scale, so
-   the hierarchy stays identical across languages.
-   -------------------------------------------------------------------------- */
 
-.font-arabic {
-  --font-arabic-primary: var(--font-vazirmatn);
-  font-family: var(--font-arabic);
-  font-size-adjust: 0.52;
-  --arabic-scale: 1.07;
-}
-
-/* Pashto leans on Noto Sans Arabic, which covers ټ ډ ړ ږ ښ ګ ڼ ې ۍ by design. */
-[data-locale="ps"].font-arabic {
-  --font-arabic-primary: var(--font-noto-arabic);
-}
-
-.font-arabic body,
-.font-arabic .text-xs,
-.font-arabic .text-sm,
-.font-arabic .text-base,
-.font-arabic .text-lg,
-.font-arabic .text-xl,
-.font-arabic .text-2xl {
-  font-size: calc(1em * var(--arabic-scale));
-  line-height: 1.75;
-}
-
-.font-arabic .text-2xs {
-  /* The dense table meta size stays put — bumping it breaks row rhythm. */
-  font-size: var(--text-2xs);
-  line-height: 1.5;
-}
 
 /* Latin data inside Arabic text — codes, emails, phone numbers. */
 .font-arabic [dir="ltr"],
@@ -235,6 +206,52 @@
 .font-arabic .font-mono {
   font-family: var(--font-latin), ui-monospace, monospace;
   font-size: 1em;
+}
+
+/* --------------------------------------------------------------------------
+   Arabic script sizing
+   --------------------------------------------------------------------------
+   Arabic-script glyphs read smaller than Latin at the same point size and
+   carry taller ascenders and deeper descenders. The scale is therefore
+   redefined *once*, at the root, by about 6% with slightly looser leading.
+
+   It is done by overriding the tokens rather than by multiplying `1em` on
+   nested elements — an em multiplier compounds on every nesting level and
+   reads as a zoom, which is exactly what it did before this was fixed.
+   -------------------------------------------------------------------------- */
+
+.font-arabic {
+  --font-arabic-primary: var(--font-vazirmatn);
+  font-family: var(--font-arabic);
+
+  --text-2xs: 0.72rem;
+  --text-2xs--line-height: 1.1rem;
+  --text-xs: 0.795rem;
+  --text-xs--line-height: 1.25rem;
+  --text-sm: 0.93rem;
+  --text-sm--line-height: 1.55rem;
+  --text-base: 1.06rem;
+  --text-base--line-height: 1.7rem;
+  --text-lg: 1.325rem;
+  --text-lg--line-height: 1.95rem;
+  --text-xl: 1.59rem;
+  --text-xl--line-height: 2.2rem;
+  --text-2xl: 2.12rem;
+  --text-2xl--line-height: 2.6rem;
+  --text-3xl: 3.12rem;
+  --text-4xl: 4.6rem;
+}
+
+/* Pashto leads on Noto Sans Arabic, which covers ټ ډ ړ ږ ښ ګ ڼ ې ۍ by design. */
+[data-locale="ps"].font-arabic {
+  --font-arabic-primary: var(--font-noto-arabic);
+}
+
+/* Latin data inside Arabic text — codes, emails, phone numbers. */
+.font-arabic [dir="ltr"],
+.font-arabic bdi,
+.font-arabic .font-mono {
+  font-family: var(--font-latin), ui-monospace, monospace;
 }
 
 @layer base {
