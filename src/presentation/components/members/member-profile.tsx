@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import {
   CalendarPlus,
   Check,
@@ -25,6 +26,13 @@ import {
 } from "recharts";
 
 import { MemberForm } from "@/presentation/components/forms/member-form";
+import { MemberCode } from "@/presentation/components/i18n/bidi";
+import {
+  formatCount,
+  formatDate as fmtDate,
+  formatDateTime as fmtDateTime,
+  formatMoney as fmtMoney,
+} from "@/presentation/lib/format";
 import { MemberAvatar } from "@/presentation/components/shared/member-avatar";
 import {
   ChartSkeleton,
@@ -78,6 +86,10 @@ export function MemberProfile({
   canWrite: boolean;
   canDelete: boolean;
 }) {
+  const t = useTranslations("members");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
+  const ctx = { locale };
   const { data, isLoading, isError, refetch } = useGetMemberQuery(memberId);
   const { data: plans = [] } = useListPlansQuery();
 
@@ -97,7 +109,7 @@ export function MemberProfile({
         <Card className="py-0">
           <CardContent className="px-0">
             <ErrorState
-              title="This profile did not load"
+              title={t("profileFailed")}
               onRetry={() => void refetch()}
             />
           </CardContent>
@@ -136,13 +148,13 @@ export function MemberProfile({
       await changeStatus({ memberId, action }).unwrap();
       toast.success(
         action === "freeze"
-          ? "Membership frozen."
+          ? t("frozenToast")
           : action === "unfreeze"
-            ? "Resumed — the paused days were credited back."
-            : "Membership cancelled.",
+            ? t("unfrozenToast")
+            : t("cancelledToast"),
       );
     } catch (error) {
-      toast.error(apiErrorMessage(error, "Could not update the membership."));
+      toast.error(apiErrorMessage(error, t("statusFailed")));
     }
   }
 
@@ -160,7 +172,7 @@ export function MemberProfile({
                 <MembershipStatus status={member.status} variant="solid" />
                 {isInsideNow ? (
                   <span className="inline-flex items-center gap-1.5 rounded-md bg-brand-subtle px-2 py-1 text-2xs font-medium text-primary uppercase">
-                    <StatusDot tone="success" pulse /> In the gym
+                    <StatusDot tone="success" pulse /> {t("inTheGym")}
                   </span>
                 ) : null}
               </div>
@@ -178,7 +190,7 @@ export function MemberProfile({
                       }}
                       className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface-2 px-2 py-1 font-mono text-xs transition-colors hover:border-border-strong"
                     >
-                      {member.code}
+                      <MemberCode code={member.code} />
                       {copied ? (
                         <Check className="size-3 text-success" />
                       ) : (
@@ -186,21 +198,21 @@ export function MemberProfile({
                       )}
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent>{copied ? "Copied" : "Copy member code"}</TooltipContent>
+                  <TooltipContent>{copied ? t("copied") : t("copyCode")}</TooltipContent>
                 </Tooltip>
 
                 <Button variant="ghost" size="sm" onClick={() => setQrOpen(true)}>
-                  <QrCode /> Member card
+                  <QrCode /> {t("memberCard")}
                 </Button>
               </div>
 
               <p className="text-sm text-muted-foreground">
-                {member.planName ?? "No plan"}
+                {member.planName ?? t("fieldPlan")}
                 {member.membershipEndsAt
-                  ? ` · ends ${formatDate(member.membershipEndsAt)}`
+                  ? ` · ${t("endsOn", { date: fmtDate(member.membershipEndsAt, ctx) })}`
                   : ""}
                 {member.daysUntilExpiry !== null && member.daysUntilExpiry >= 0
-                  ? ` (${member.daysUntilExpiry} days)`
+                  ? ` · ${t("expiresIn", { count: member.daysUntilExpiry })}`
                   : ""}
               </p>
             </div>
@@ -209,7 +221,7 @@ export function MemberProfile({
           {canWrite ? (
             <div className="flex flex-wrap items-center gap-2">
               <Button variant="ghost" onClick={() => setEditOpen(true)}>
-                <Pencil /> Edit
+                <Pencil /> {tCommon("edit")}
               </Button>
 
               {member.status === "frozen" ? (
@@ -218,7 +230,7 @@ export function MemberProfile({
                   disabled={busy}
                   onClick={() => void runStatusChange("unfreeze")}
                 >
-                  <Play /> Unfreeze
+                  <Play /> {t("unfreeze")}
                 </Button>
               ) : (
                 <Button
@@ -226,13 +238,13 @@ export function MemberProfile({
                   disabled={busy || member.status === "cancelled"}
                   onClick={() => void runStatusChange("freeze")}
                 >
-                  <Pause /> Freeze
+                  <Pause /> {t("freeze")}
                 </Button>
               )}
 
               {/* One primary action on the screen. */}
               <Button onClick={() => setRenewOpen(true)} disabled={busy}>
-                <CalendarPlus /> Renew
+                <CalendarPlus /> {t("renew")}
               </Button>
             </div>
           ) : null}
@@ -241,38 +253,43 @@ export function MemberProfile({
 
       <Tabs defaultValue="overview">
         <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="membership">Membership</TabsTrigger>
-          <TabsTrigger value="activity">Activity</TabsTrigger>
-          <TabsTrigger value="notes">Notes</TabsTrigger>
+          <TabsTrigger value="overview">{t("tabOverview")}</TabsTrigger>
+          <TabsTrigger value="membership">{t("tabMembership")}</TabsTrigger>
+          <TabsTrigger value="activity">{t("tabActivity")}</TabsTrigger>
+          <TabsTrigger value="notes">{t("tabNotes")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-3">
-            <Metric label="Total visits" value={member.totalVisits} />
-            <Metric label="Visits · 30 days" value={member.visitsLast30Days} />
+            <Metric label={t("totalVisits")} value={formatCount(member.totalVisits, ctx)} />
+            <Metric label={t("visits30")} value={formatCount(member.visitsLast30Days, ctx)} />
             <Metric
-              label="Member since"
-              value={formatDate(member.joinedAt)}
+              label={t("memberSince")}
+              value={fmtDate(member.joinedAt, ctx)}
               isText
             />
           </div>
 
           <Card>
             <CardHeader>
-              <CardTitle>Attendance</CardTitle>
+              <CardTitle>{t("attendance")}</CardTitle>
               <p className="text-sm text-muted-foreground">
                 {attendance.length === 0
-                  ? "No visits recorded in the last 90 days."
-                  : `${attendance.reduce((sum, day) => sum + day.count, 0)} visits over the last 90 days.`}
+                  ? t("attendanceNone")
+                  : t("attendanceSummary", {
+                      count: formatCount(
+                        attendance.reduce((sum, day) => sum + day.count, 0),
+                        ctx,
+                      ),
+                    })}
               </p>
             </CardHeader>
             <CardContent>
               {attendance.length === 0 ? (
                 <EmptyState
                   compact
-                  title="No attendance yet"
-                  description="Visits will chart here once this member starts checking in."
+                  title={t("attendanceEmpty")}
+                  description={t("attendanceEmptyHint")}
                 />
               ) : (
                 <>
@@ -322,11 +339,11 @@ export function MemberProfile({
                   </div>
 
                   <table className="sr-only">
-                    <caption>Visits per day over the last 90 days</caption>
+                    <caption>{t("attendanceTableCaption")}</caption>
                     <thead>
                       <tr>
-                        <th scope="col">Date</th>
-                        <th scope="col">Visits</th>
+                        <th scope="col">{t("date")}</th>
+                        <th scope="col">{t("visitsColumn")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -347,30 +364,30 @@ export function MemberProfile({
         <TabsContent value="membership">
           <Card>
             <CardHeader>
-              <CardTitle>Membership</CardTitle>
+              <CardTitle>{t("tabMembership")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <dl className="grid gap-x-8 gap-y-3 sm:grid-cols-2">
-                <Field label="Plan" value={member.planName ?? "No plan"} />
-                <Field label="Status" value={<MembershipStatus status={member.status} />} />
+                <Field label={t("fieldPlan")} value={member.planName ?? tCommon("dash")} />
+                <Field label={t("fieldStatus")} value={<MembershipStatus status={member.status} />} />
                 <Field
-                  label="Started"
-                  value={member.membershipStartsAt ? formatDate(member.membershipStartsAt) : "—"}
+                  label={t("fieldStarted")}
+                  value={member.membershipStartsAt ? fmtDate(member.membershipStartsAt, ctx) : tCommon("dash")}
                 />
                 <Field
-                  label="Ends"
-                  value={member.membershipEndsAt ? formatDate(member.membershipEndsAt) : "—"}
+                  label={t("fieldEnds")}
+                  value={member.membershipEndsAt ? fmtDate(member.membershipEndsAt, ctx) : tCommon("dash")}
                 />
-                <Field label="Email" value={member.email ?? "—"} />
-                <Field label="Phone" value={member.phone ?? "—"} />
+                <Field label={t("fieldEmail")} value={member.email ? <MemberCode code={member.email} /> : tCommon("dash")} />
+                <Field label={t("fieldPhone")} value={member.phone ? <MemberCode code={member.phone} /> : tCommon("dash")} />
               </dl>
 
               {canDelete && !member.isDeleted ? (
                 <div className="flex items-center justify-between gap-4 rounded-md border border-danger/30 bg-danger-subtle px-3 py-2.5">
                   <div>
-                    <p className="text-sm font-medium">Remove this member</p>
+                    <p className="text-sm font-medium">{t("removeTitle")}</p>
                     <p className="text-xs text-muted-foreground">
-                      Their history is kept, so past reports stay accurate.
+                      {t("removeHint")}
                     </p>
                   </div>
                   <Button
@@ -379,13 +396,13 @@ export function MemberProfile({
                     onClick={async () => {
                       try {
                         await deleteMember({ memberId }).unwrap();
-                        toast.success("Member removed.");
+                        toast.success(t("removedToast"));
                       } catch (error) {
-                        toast.error(apiErrorMessage(error, "Could not remove the member."));
+                        toast.error(apiErrorMessage(error, t("removeFailed")));
                       }
                     }}
                   >
-                    <Trash2 /> Remove
+                    <Trash2 /> {tCommon("remove")}
                   </Button>
                 </div>
               ) : null}
@@ -397,7 +414,7 @@ export function MemberProfile({
                   className="text-muted-foreground"
                   onClick={() => void runStatusChange("cancel")}
                 >
-                  <UserRoundX /> Cancel membership
+                  <UserRoundX /> {t("cancelMembership")}
                 </Button>
               ) : null}
             </CardContent>
@@ -407,9 +424,9 @@ export function MemberProfile({
         <TabsContent value="activity">
           <Card>
             <CardHeader>
-              <CardTitle>Audit trail</CardTitle>
+              <CardTitle>{t("auditTrail")}</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Everything that has happened to this record.
+                {t("auditTrailHint")}
               </p>
             </CardHeader>
             <CardContent>
@@ -418,8 +435,8 @@ export function MemberProfile({
               ) : auditTrail.length === 0 ? (
                 <EmptyState
                   compact
-                  title="Nothing recorded yet"
-                  description="Renewals, freezes and edits will be listed here."
+                  title={t("auditEmpty")}
+                  description={t("auditEmptyHint")}
                 />
               ) : (
                 <ol className="space-y-0">
@@ -434,7 +451,7 @@ export function MemberProfile({
                       <div className="pb-4">
                         <p className="text-sm">{entry.summary}</p>
                         <p data-numeric className="text-xs text-muted-foreground">
-                          {formatDateTime(entry.createdAt)}
+                          {fmtDateTime(entry.createdAt, ctx)}
                         </p>
                       </div>
                     </li>
@@ -448,7 +465,7 @@ export function MemberProfile({
         <TabsContent value="notes">
           <Card>
             <CardHeader>
-              <CardTitle>Notes</CardTitle>
+              <CardTitle>{t("tabNotes")}</CardTitle>
             </CardHeader>
             <CardContent>
               {member.notes ? (
@@ -456,12 +473,12 @@ export function MemberProfile({
               ) : (
                 <EmptyState
                   compact
-                  title="No notes"
-                  description="Anything the desk should know goes here."
+                  title={t("notesEmpty")}
+                  description={t("notesEmptyHint")}
                   action={
                     canWrite ? (
                       <Button size="sm" variant="secondary" onClick={() => setEditOpen(true)}>
-                        <Pencil /> Add a note
+                        <Pencil /> {t("addNote")}
                       </Button>
                     ) : undefined
                   }
@@ -476,23 +493,26 @@ export function MemberProfile({
       <Dialog open={isRenewOpen} onOpenChange={setRenewOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Renew membership</DialogTitle>
+            <DialogTitle>{t("renewTitle")}</DialogTitle>
             <DialogDescription>
-              Days still left on the current term carry over — a renewal never costs a member
-              time they have already paid for.
+              {t("renewHint")}
             </DialogDescription>
           </DialogHeader>
 
           <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Choose a plan" />
+              <SelectValue placeholder={t("choosePlan")} />
             </SelectTrigger>
             <SelectContent>
               {plans
                 .filter((plan) => plan.isActive)
                 .map((plan) => (
                   <SelectItem key={plan.id} value={plan.id}>
-                    {plan.name} — {plan.durationDays} days · {formatMoney(plan.priceCents)}
+                    {t("planOption", {
+                      name: plan.name,
+                      days: formatCount(plan.durationDays, ctx),
+                      price: fmtMoney(plan.priceCents, ctx),
+                    })}
                   </SelectItem>
                 ))}
             </SelectContent>
@@ -500,22 +520,22 @@ export function MemberProfile({
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => setRenewOpen(false)}>
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button
               disabled={!selectedPlanId || isRenewing}
               onClick={async () => {
                 try {
                   const updated = await renew({ memberId, planId: selectedPlanId }).unwrap();
-                  toast.success(`Renewed through ${formatDate(updated.membershipEndsAt ?? "")}.`);
+                  toast.success(t("renewedThrough", { date: fmtDate(updated.membershipEndsAt ?? "", ctx) }));
                   setRenewOpen(false);
                 } catch (error) {
-                  toast.error(apiErrorMessage(error, "Could not renew the membership."));
+                  toast.error(apiErrorMessage(error, t("renewFailed")));
                 }
               }}
             >
               {isRenewing ? <Loader2 className="animate-spin" /> : <CalendarPlus />}
-              Renew
+              {t("renew")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -585,15 +605,16 @@ function QrDialog({
   onOpenChange: (open: boolean) => void;
   name: string;
 }) {
+  const t = useTranslations("members");
   const { data, isLoading } = useGetMemberQrCodeQuery(memberId, { skip: !open });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>{name}&apos;s member card</DialogTitle>
+          <DialogTitle>{t("memberCardTitle", { name })}</DialogTitle>
           <DialogDescription>
-            Scan this at the kiosk to check in, or print it onto a card.
+            {t("memberCardHint")}
           </DialogDescription>
         </DialogHeader>
 
@@ -619,20 +640,5 @@ function QrDialog({
   );
 }
 
-function formatDate(iso: string): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-}
 
-function formatDateTime(iso: string): string {
-  return `${formatDate(iso)} · ${new Date(iso).toISOString().slice(11, 16)}`;
-}
 
-function formatMoney(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
-}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -32,11 +33,14 @@ export const planFormSchema = z.object({
 
 export type PlanFormValues = z.infer<typeof planFormSchema>;
 
-const FIELDS: Array<FieldConfig<PlanFormValues>> = [
-  { name: "name", label: "Plan name", required: true, placeholder: "Monthly", maxLength: 80 },
+function planFields(
+  t: (key: string, values?: Record<string, string | number | Date>) => string,
+): Array<FieldConfig<PlanFormValues>> {
+  return [
+  { name: "name", label: t("planName"), required: true, placeholder: t("planNamePlaceholder"), maxLength: 80 },
   {
     name: "price",
-    label: "Price",
+    label: t("price"),
     kind: "number",
     required: true,
     half: true,
@@ -45,22 +49,23 @@ const FIELDS: Array<FieldConfig<PlanFormValues>> = [
   },
   {
     name: "durationDays",
-    label: "Duration",
+    label: t("duration"),
     kind: "number",
     required: true,
     half: true,
     min: 1,
-    hint: "In days — 30 for monthly, 365 for annual.",
+    hint: t("durationHint"),
   },
   {
     name: "description",
-    label: "Description",
+    label: t("description"),
     kind: "textarea",
     rows: 3,
     maxLength: 500,
-    placeholder: "Full access, rolling month.",
+    placeholder: t("planDescriptionPlaceholder"),
   },
-];
+  ];
+}
 
 export function PlanForm({
   mode,
@@ -75,20 +80,22 @@ export function PlanForm({
   defaultValues?: PlanDto;
   onSuccess?: (plan: PlanDto) => void;
 }) {
+  const t = useTranslations("forms");
+  const tCommon = useTranslations("common");
   const [createPlan] = useCreatePlanMutation();
   const [updatePlan] = useUpdatePlanMutation();
 
   return (
     <EntityForm
       mode={mode}
-      entityLabel="plan"
+      entityLabel="entityPlan"
       description={
         mode === "edit"
-          ? "Changing a plan does not alter terms already sold."
-          : "New plans go on sale immediately."
+          ? t("planDescriptionEdit")
+          : t("planDescriptionCreate")
       }
       schema={planFormSchema}
-      fields={FIELDS}
+      fields={planFields(t)}
       open={open}
       onOpenChange={onOpenChange}
       defaultValues={{
@@ -97,7 +104,7 @@ export function PlanForm({
         durationDays: defaultValues?.durationDays,
         description: defaultValues?.description,
       }}
-      submitLabel={{ create: "Create plan", edit: "Save changes" }}
+      submitLabel={{ create: t("createPlan"), edit: tCommon("save") }}
       onSubmit={async (values) => {
         try {
           const payload = {
@@ -112,10 +119,10 @@ export function PlanForm({
               ? await createPlan(payload).unwrap()
               : await updatePlan({ planId: defaultValues!.id, ...payload }).unwrap();
 
-          toast.success(mode === "create" ? "Plan created." : "Plan updated.");
+          toast.success(mode === "create" ? t("planCreated") : t("planUpdated"));
           onSuccess?.(plan);
         } catch (error) {
-          toast.error(apiErrorMessage(error, "Could not save the plan."));
+          toast.error(apiErrorMessage(error, t("planSaveFailed")));
           throw error;
         }
       }}

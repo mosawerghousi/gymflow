@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import {
   ArrowLeftRight,
   CalendarDays,
@@ -14,7 +15,16 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { SHIFT_POSITIONS, SHIFT_POSITION_LABELS } from "@/domain/entities/shift";
+import { SHIFT_POSITIONS } from "@/domain/entities/shift";
+import {
+  formatCount,
+  formatDayMonth,
+  formatDayNumber,
+  formatHour,
+  formatTime as fmtTime,
+  formatWeekday,
+  weekDaysFrom,
+} from "@/presentation/lib/format";
 import { SessionForm } from "@/presentation/components/forms/session-form";
 import { ShiftForm } from "@/presentation/components/forms/shift-form";
 import { MemberAvatar } from "@/presentation/components/shared/member-avatar";
@@ -63,7 +73,6 @@ import {
 const DAY_START_HOUR = 6;
 const DAY_END_HOUR = 22;
 const HOURS = Array.from({ length: DAY_END_HOUR - DAY_START_HOUR }, (_, i) => DAY_START_HOUR + i);
-const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 /** Generous rows — a 44px grid row is unreadable once two people overlap. */
 const ROW_HEIGHT = 56;
 
@@ -93,6 +102,11 @@ export interface ScheduleScreenProps {
  * server and are shown inline, in red, on the block that clashes.
  */
 export function ScheduleScreen(props: ScheduleScreenProps) {
+  const t = useTranslations("schedule");
+  const tCommon = useTranslations("common");
+  const tPos = useTranslations("positions");
+  const locale = useLocale();
+  const ctx = { locale };
   const dispatch = useAppDispatch();
   const { weekStart, draft, isDragging, selectedShiftId, isShiftDialogOpen, mineOnly } =
     useAppSelector((state) => state.schedule);
@@ -104,7 +118,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
     }
   }, [weekStart, dispatch]);
 
-  const { from, to, days } = useMemo(() => weekWindow(weekStart), [weekStart]);
+  const { from, to, days } = useMemo(() => weekWindow(weekStart, locale), [weekStart, locale]);
 
   const { data, isLoading, isError, refetch } = useGetScheduleQuery({
     from: from.toISOString(),
@@ -157,7 +171,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
           <Button
             variant="outline"
             size="icon-sm"
-            aria-label="Previous week"
+            aria-label={t("previousWeek")}
             onClick={() => dispatch(weekShifted(-1))}
           >
             <ChevronLeft />
@@ -165,7 +179,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
           <Button
             variant="outline"
             size="icon-sm"
-            aria-label="Next week"
+            aria-label={t("nextWeek")}
             onClick={() => dispatch(weekShifted(1))}
           >
             <ChevronRight />
@@ -175,12 +189,12 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
             size="sm"
             onClick={() => dispatch(jumpedToToday(new Date().toISOString()))}
           >
-            Today
+            {tCommon("today")}
           </Button>
         </div>
 
         <p data-numeric className="text-sm font-medium">
-          {formatDate(days[0])} – {formatDate(days[6])}
+          {formatDayMonth(days[0]!, ctx)} – {formatDayMonth(days[6]!, ctx)}
         </p>
 
         <Button
@@ -188,7 +202,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
           size="sm"
           onClick={() => dispatch(mineOnlyToggled(!mineOnly))}
         >
-          <CalendarDays /> Only mine
+          <CalendarDays /> {t("onlyMine")}
         </Button>
 
         <div className="ms-auto flex items-center gap-2">
@@ -196,13 +210,13 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
             <a
               href={`/api/export/ical?from=${from.toISOString()}&to=${to.toISOString()}${mineOnly ? "&mine=true" : ""}`}
             >
-              <Download /> .ics
+              <Download /> {t("exportIcs")}
             </a>
           </Button>
 
           {props.canBookSessions && trainers.length > 0 ? (
             <Button variant="secondary" size="sm" onClick={() => setSessionFormOpen(true)}>
-              <UserPlus /> Book session
+              <UserPlus /> {t("bookSession")}
             </Button>
           ) : null}
 
@@ -214,7 +228,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                 setShiftFormOpen(true);
               }}
             >
-              <CalendarPlus /> Add shift
+              <CalendarPlus /> {t("addShift")}
             </Button>
           ) : null}
         </div>
@@ -230,15 +244,15 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                 POSITION_STYLES[position]?.split(" hover:")[0],
               )}
             />
-            {SHIFT_POSITION_LABELS[position]}
+            {tPos(position)}
           </span>
         ))}
         <span className="inline-flex items-center gap-1.5">
           <span className="h-3 w-1 rounded-full bg-success" />
-          Trainer session
+          {t("trainerSession")}
         </span>
         {props.canManageShifts ? (
-          <span className="ms-auto">Drag down a column to rough out a shift.</span>
+          <span className="ms-auto">{t("dragHint")}</span>
         ) : null}
       </div>
 
@@ -246,7 +260,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
       <Card className="overflow-hidden py-0">
         <CardContent className="px-0">
           {isError ? (
-            <ErrorState title="The schedule did not load" onRetry={() => void refetch()} />
+            <ErrorState title={t("scheduleFailed")} onRetry={() => void refetch()} />
           ) : isLoading ? (
             <div className="space-y-px p-4">
               {Array.from({ length: 8 }).map((_, index) => (
@@ -259,7 +273,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                 {/* Day header */}
                 <div className="sticky top-0 z-10 grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] border-b border-border bg-card">
                   <div />
-                  {days.map((day, index) => (
+                  {days.map((day) => (
                     <div
                       key={day.toISOString()}
                       className={cn(
@@ -268,7 +282,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                       )}
                     >
                       <p className="text-2xs font-medium tracking-wide text-secondary-foreground uppercase">
-                        {DAY_LABELS[index]}
+                        {formatWeekday(day, ctx)}
                       </p>
                       <p
                         data-numeric
@@ -277,7 +291,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                           isToday(day) && "text-primary",
                         )}
                       >
-                        {day.getUTCDate()}
+                        {formatDayNumber(day, ctx)}
                       </p>
                     </div>
                   ))}
@@ -303,7 +317,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                         data-numeric
                         className="pt-1 pe-2 text-end text-2xs text-muted-foreground"
                       >
-                        {String(hour).padStart(2, "0")}:00
+                        {formatHour(hour, ctx)}
                       </div>
 
                       {days.map((day, dayIndex) => {
@@ -403,7 +417,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                                   key={shift.id}
                                   type="button"
                                   onClick={() => dispatch(shiftSelected(shift.id))}
-                                  title={`${shift.userName} · ${SHIFT_POSITION_LABELS[shift.position]} · ${formatTime(shift.startsAt)}–${formatTime(shift.endsAt)}`}
+                                  title={`${shift.userName} · ${tPos(shift.position)} · ${fmtTime(shift.startsAt, ctx)}–${fmtTime(shift.endsAt, ctx)}`}
                                   style={{
                                     ...geometry,
                                     left: `calc(${(lane / lanes) * 100}% + 2px)`,
@@ -424,13 +438,13 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                                   </span>
                                   {lanes < 3 ? (
                                     <span data-numeric className="block w-full truncate opacity-90">
-                                      {formatTime(shift.startsAt)}–{formatTime(shift.endsAt)}
+                                      {fmtTime(shift.startsAt, ctx)}–{fmtTime(shift.endsAt, ctx)}
                                     </span>
                                   ) : null}
                                   {shift.swapStatus === "pending" ? (
                                     <span className="mt-0.5 flex items-center gap-0.5">
                                       <Repeat className="size-2.5" />
-                                      {lanes < 3 ? "cover" : null}
+                                      {lanes < 3 ? t("cover") : null}
                                     </span>
                                   ) : null}
                                 </button>
@@ -448,7 +462,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                                 <div
                                   key={session.id}
                                   style={geometry}
-                                  title={`PT: ${session.memberName} with ${session.trainerName} · ${formatTime(session.startsAt)}`}
+                                  title={`${session.memberName} · ${session.trainerName} · ${fmtTime(session.startsAt, ctx)}`}
                                   className={cn(
                                     "pointer-events-auto absolute end-0.5 w-1.5 rounded-full bg-success",
                                     session.status === "cancelled" && "opacity-25",
@@ -471,20 +485,20 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Trainer sessions</CardTitle>
-            <p className="text-sm text-muted-foreground">Booked this week.</p>
+            <CardTitle>{t("trainerSessions")}</CardTitle>
+            <p className="text-sm text-muted-foreground">{t("bookedThisWeek")}</p>
           </CardHeader>
           <CardContent className="max-h-80 overflow-y-auto">
             {!data || data.sessions.length === 0 ? (
               <EmptyState
                 compact
                 icon={UserPlus}
-                title="No sessions booked"
-                description="Book one against a trainer's rostered hours."
+                title={t("noSessions")}
+                description={t("noSessionsHint")}
                 action={
                   props.canBookSessions && trainers.length > 0 ? (
                     <Button size="sm" variant="secondary" onClick={() => setSessionFormOpen(true)}>
-                      <UserPlus /> Book session
+                      <UserPlus /> {t("bookSession")}
                     </Button>
                   ) : undefined
                 }
@@ -497,7 +511,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm">{session.memberName}</p>
                       <p data-numeric className="truncate text-xs text-muted-foreground">
-                        {formatDayTime(session.startsAt)} · {session.trainerName}
+                        {formatWeekday(session.startsAt, ctx)} {fmtTime(session.startsAt, ctx)} · {session.trainerName}
                       </p>
                     </div>
                     <SessionStatus status={session.status} />
@@ -513,13 +527,13 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                                 sessionId: session.id,
                                 status: "completed",
                               }).unwrap();
-                              toast.success("Marked completed.");
+                              toast.success(t("markedCompleted"));
                             } catch (error) {
-                              toast.error(apiErrorMessage(error, "Could not update."));
+                              toast.error(apiErrorMessage(error, t("updateFailed")));
                             }
                           }}
                         >
-                          Done
+                          {t("markDone")}
                         </Button>
                         <Button
                           size="sm"
@@ -530,13 +544,13 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                                 sessionId: session.id,
                                 status: "no_show",
                               }).unwrap();
-                              toast.info("Marked as a no-show.");
+                              toast.info(t("markedNoShow"));
                             } catch (error) {
-                              toast.error(apiErrorMessage(error, "Could not update."));
+                              toast.error(apiErrorMessage(error, t("updateFailed")));
                             }
                           }}
                         >
-                          No-show
+                          {t("markNoShow")}
                         </Button>
                       </div>
                     ) : null}
@@ -549,16 +563,16 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Cover requests</CardTitle>
-            <p className="text-sm text-muted-foreground">Shifts waiting on a swap.</p>
+            <CardTitle>{t("coverRequests")}</CardTitle>
+            <p className="text-sm text-muted-foreground">{t("coverRequestsHint")}</p>
           </CardHeader>
           <CardContent className="max-h-80 overflow-y-auto">
             {!data || data.swapRequests.length === 0 ? (
               <EmptyState
                 compact
                 icon={ArrowLeftRight}
-                title="Nothing waiting"
-                description="Swap requests from staff land here."
+                title={t("nothingWaiting")}
+                description={t("nothingWaitingHint")}
               />
             ) : (
               <ul className="divide-y divide-border">
@@ -568,12 +582,11 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                       <MemberAvatar name={request.requestedByName} size="sm" />
                       <div className="min-w-0">
                         <p className="text-sm">
-                          <span className="font-medium">{request.requestedByName}</span> needs
-                          cover
+                          {t("needsCover", { name: request.requestedByName })}
                         </p>
                         <p data-numeric className="text-xs text-muted-foreground">
-                          {formatDayTime(request.shiftStartsAt)} –{" "}
-                          {formatTime(request.shiftEndsAt)}
+                          {formatWeekday(request.shiftStartsAt, ctx)}{" "}
+                          {fmtTime(request.shiftStartsAt, ctx)} – {fmtTime(request.shiftEndsAt, ctx)}
                         </p>
                         {request.reason ? (
                           <p className="mt-1 text-xs text-muted-foreground">{request.reason}</p>
@@ -591,11 +604,11 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                               decision: "approve",
                               coverUserId,
                             }).unwrap();
-                            toast.success("Swap approved and the shift reassigned.");
+                            toast.success(t("swapApproved"));
                           } catch (error) {
                             setConflictShiftId(request.shiftId);
                             setTimeout(() => setConflictShiftId(null), 4000);
-                            toast.error(apiErrorMessage(error, "Could not approve the swap."));
+                            toast.error(apiErrorMessage(error, t("swapApproveFailed")));
                           }
                         }}
                         onReject={async () => {
@@ -604,9 +617,9 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                               swapRequestId: request.id,
                               decision: "reject",
                             }).unwrap();
-                            toast.info("Swap request rejected.");
+                            toast.info(t("swapRejected"));
                           } catch (error) {
-                            toast.error(apiErrorMessage(error, "Could not reject the swap."));
+                            toast.error(apiErrorMessage(error, t("swapRejectFailed")));
                           }
                         }}
                       />
@@ -620,13 +633,13 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                               swapRequestId: request.id,
                               decision: "withdraw",
                             }).unwrap();
-                            toast.info("Request withdrawn.");
+                            toast.info(t("swapWithdrawn"));
                           } catch (error) {
-                            toast.error(apiErrorMessage(error, "Could not withdraw."));
+                            toast.error(apiErrorMessage(error, t("swapWithdrawFailed")));
                           }
                         }}
                       >
-                        Withdraw
+                        {t("withdraw")}
                       </Button>
                     ) : null}
                   </li>
@@ -672,8 +685,12 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                   {selectedShift.userName}
                 </DialogTitle>
                 <DialogDescription data-numeric>
-                  {formatDayTime(selectedShift.startsAt)} – {formatTime(selectedShift.endsAt)} ·{" "}
-                  {SHIFT_POSITION_LABELS[selectedShift.position]} · {selectedShift.hours}h
+                  {t("shiftDetail", {
+                    start: `${formatWeekday(selectedShift.startsAt, ctx)} ${fmtTime(selectedShift.startsAt, ctx)}`,
+                    end: fmtTime(selectedShift.endsAt, ctx),
+                    position: tPos(selectedShift.position),
+                    hours: formatCount(selectedShift.hours, ctx),
+                  })}
                 </DialogDescription>
               </DialogHeader>
 
@@ -689,14 +706,14 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                     onClick={async () => {
                       try {
                         await cancelShift({ shiftId: selectedShift.id }).unwrap();
-                        toast.success("Shift cancelled.");
+                        toast.success(t("shiftCancelled"));
                         dispatch(shiftDialogClosed());
                       } catch (error) {
-                        toast.error(apiErrorMessage(error, "Could not cancel the shift."));
+                        toast.error(apiErrorMessage(error, t("cancelShiftFailed")));
                       }
                     }}
                   >
-                    <Trash2 /> Cancel shift
+                    <Trash2 /> {t("cancelShift")}
                   </Button>
                 ) : (
                   <span />
@@ -707,14 +724,14 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                     onClick={async () => {
                       try {
                         await requestSwap({ shiftId: selectedShift.id }).unwrap();
-                        toast.success("Cover requested — an admin will find someone.");
+                        toast.success(t("coverRequested"));
                         dispatch(shiftDialogClosed());
                       } catch (error) {
-                        toast.error(apiErrorMessage(error, "Could not request a swap."));
+                        toast.error(apiErrorMessage(error, t("coverRequestFailed")));
                       }
                     }}
                   >
-                    <ArrowLeftRight /> Request cover
+                    <ArrowLeftRight /> {t("requestCover")}
                   </Button>
                 ) : null}
               </DialogFooter>
@@ -735,13 +752,16 @@ function SwapResolver({
   onApprove: (coverUserId: string) => Promise<void>;
   onReject: () => Promise<void>;
 }) {
+  const t = useTranslations("schedule");
   const [coverUserId, setCoverUserId] = useState("");
+  const label = t("chooseCoverLabel");
+  const placeholder = t("chooseCover");
 
   return (
     <div className="flex flex-wrap items-center gap-2 ps-10">
       <Select value={coverUserId} onValueChange={setCoverUserId}>
-        <SelectTrigger className="h-8 w-40 text-xs" aria-label="Choose who covers this shift">
-          <SelectValue placeholder="Choose cover" />
+        <SelectTrigger className="h-8 w-40 text-xs" aria-label={label}>
+          <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
           {staff.map((member) => (
@@ -753,10 +773,10 @@ function SwapResolver({
       </Select>
 
       <Button size="sm" disabled={!coverUserId} onClick={() => void onApprove(coverUserId)}>
-        Approve
+        {t("approve")}
       </Button>
       <Button size="sm" variant="ghost" onClick={() => void onReject()}>
-        Reject
+        {t("reject")}
       </Button>
     </div>
   );
@@ -841,12 +861,15 @@ function packIntoLanes<T>(
   return packed;
 }
 
-function weekWindow(weekStart: string) {
-  const from = new Date(`${weekStart}T00:00:00.000Z`);
-  const days = Array.from(
-    { length: 7 },
-    (_, index) => new Date(from.getTime() + index * 86_400_000),
-  );
+/**
+ * The visible week.
+ *
+ * Column order follows the locale's first day — Saturday in Afghanistan — while
+ * the query window still spans the same seven days.
+ */
+function weekWindow(weekStart: string, locale: string) {
+  const days = weekDaysFrom(weekStart, locale);
+  const from = days[0]!;
 
   return { from, to: new Date(from.getTime() + 7 * 86_400_000), days };
 }
@@ -877,16 +900,5 @@ function isToday(day: Date): boolean {
   return day.toISOString().slice(0, 10) === new Date().toISOString().slice(0, 10);
 }
 
-function formatDate(day?: Date): string {
-  if (!day) return "";
-  return day.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
-}
 
-function formatTime(iso: string): string {
-  return new Date(iso).toISOString().slice(11, 16);
-}
 
-function formatDayTime(iso: string): string {
-  const date = new Date(iso);
-  return `${date.toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" })} ${formatTime(iso)}`;
-}

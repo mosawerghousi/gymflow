@@ -1,9 +1,10 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { SHIFT_POSITIONS, SHIFT_POSITION_LABELS } from "@/domain/entities/shift";
+import { SHIFT_POSITIONS } from "@/domain/entities/shift";
 import type { ShiftDto } from "@/application/dto/schedule.dto";
 import {
   EntityForm,
@@ -51,43 +52,46 @@ export function ShiftForm({
   defaultValues?: Partial<ShiftDto>;
   onSuccess?: (shift: ShiftDto) => void;
 }) {
+  const t = useTranslations("forms");
+  const tCommon = useTranslations("common");
+  const tPos = useTranslations("positions");
   const [createShift] = useCreateShiftMutation();
   const [updateShift] = useUpdateShiftMutation();
 
   const fields: Array<FieldConfig<ShiftFormValues>> = [
     {
       name: "userId",
-      label: "Who is working",
+      label: t("whoIsWorking"),
       kind: "select",
       required: true,
-      placeholder: "Pick a staff member",
+      placeholder: t("pickStaff"),
       options: staff.map((member) => ({
         value: member.id,
         label: `${member.name} · ${member.role}`,
       })),
     },
-    { name: "date", label: "Date", section: "When", kind: "date", required: true },
-    { name: "startTime", label: "Starts", section: "When", kind: "text", required: true, half: true, placeholder: "09:00" },
-    { name: "endTime", label: "Ends", section: "When", kind: "text", required: true, half: true, placeholder: "17:00" },
+    { name: "date", label: t("date"), section: t("sectionWhen"), kind: "date", required: true },
+    { name: "startTime", label: t("starts"), section: t("sectionWhen"), kind: "text", required: true, half: true, placeholder: "09:00" },
+    { name: "endTime", label: t("ends"), section: t("sectionWhen"), kind: "text", required: true, half: true, placeholder: "17:00" },
     {
       name: "position",
-      label: "Position",
-      section: "Details",
+      label: t("position"),
+      section: t("sectionDetails"),
       kind: "select",
       required: true,
       options: SHIFT_POSITIONS.map((position) => ({
         value: position,
-        label: SHIFT_POSITION_LABELS[position],
+        label: tPos(position),
       })),
     },
-    { name: "notes", label: "Notes", section: "Details", kind: "textarea", rows: 3, maxLength: 500 },
+    { name: "notes", label: t("notes"), section: t("sectionDetails"), kind: "textarea", rows: 3, maxLength: 500 },
   ];
 
   return (
     <EntityForm
       mode={mode}
-      entityLabel="shift"
-      description="Overlapping shifts for the same person are refused."
+      entityLabel="entityShift"
+      description={t("shiftDescription")}
       schema={shiftFormSchema}
       fields={fields}
       open={open}
@@ -100,7 +104,7 @@ export function ShiftForm({
         position: defaultValues?.position ?? "front_desk",
         notes: defaultValues?.notes,
       }}
-      submitLabel={{ create: "Create shift", edit: "Save changes" }}
+      submitLabel={{ create: t("createShift"), edit: tCommon("save") }}
       onSubmit={async (values) => {
         try {
           const payload = {
@@ -116,10 +120,10 @@ export function ShiftForm({
               ? await createShift(payload).unwrap()
               : await updateShift({ shiftId: defaultValues!.id!, ...payload }).unwrap();
 
-          toast.success(mode === "create" ? "Shift scheduled." : "Shift updated.");
+          toast.success(mode === "create" ? t("shiftScheduled") : t("shiftUpdated"));
           onSuccess?.(shift);
         } catch (error) {
-          toast.error(apiErrorMessage(error, "Could not save the shift."));
+          toast.error(apiErrorMessage(error, t("shiftSaveFailed")));
           throw error;
         }
       }}

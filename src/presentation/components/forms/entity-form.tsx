@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { AlertCircle, Check, Loader2, Lock } from "lucide-react";
 import type { ReactNode } from "react";
 import type { z } from "zod";
@@ -62,7 +63,7 @@ export interface FieldConfig<Values> {
 
 export interface EntityFormProps<Schema extends z.ZodTypeAny> {
   mode: FormMode;
-  /** e.g. "member" — drives "Add member" / "Edit member". */
+  /** A key under `forms`, e.g. `entityMember`, used in the title. */
   entityLabel: string;
   description?: string;
   schema: Schema;
@@ -92,6 +93,8 @@ export function EntityForm<Schema extends z.ZodTypeAny>({
   header,
   submitLabel,
 }: EntityFormProps<Schema>) {
+  const t = useTranslations("forms");
+  const tCommon = useTranslations("common");
   const initial = useMemo(() => toStringRecord(defaultValues, fields), [defaultValues, fields]);
 
   const [values, setValues] = useState<Record<string, string>>(initial);
@@ -203,9 +206,13 @@ export function EntityForm<Schema extends z.ZodTypeAny>({
     }
   }
 
-  const title = `${mode === "create" ? "Add" : "Edit"} ${entityLabel}`;
+  const title = t(mode === "create" ? "addEntity" : "editEntity", {
+    entity: t(entityLabel),
+  });
   const submitText =
-    mode === "create" ? (submitLabel?.create ?? "Create") : (submitLabel?.edit ?? "Save changes");
+    mode === "create"
+      ? (submitLabel?.create ?? tCommon("create"))
+      : (submitLabel?.edit ?? tCommon("save"));
 
   const sections = groupIntoSections(fields);
   const errorCount = Object.keys(errors).filter((key) => touched[key]).length;
@@ -285,7 +292,7 @@ export function EntityForm<Schema extends z.ZodTypeAny>({
 
                           {isLocked ? (
                             <span className="inline-flex items-center gap-1 text-2xs text-muted-foreground">
-                              <Lock className="size-3" /> Locked
+                              <Lock className="size-3" /> {tCommon("locked")}
                             </span>
                           ) : field.maxLength ? (
                             <span
@@ -345,12 +352,12 @@ export function EntityForm<Schema extends z.ZodTypeAny>({
                               aria-invalid={Boolean(error)}
                               aria-describedby={describedBy}
                             >
-                              <SelectValue placeholder={field.placeholder ?? "Choose…"} />
+                              <SelectValue placeholder={field.placeholder ?? t("choose")} />
                             </SelectTrigger>
                             <SelectContent>
                               {(field.options ?? []).length === 0 ? (
                                 <div className="px-2 py-6 text-center text-sm text-muted-foreground">
-                                  Nothing to choose yet.
+                                  {t("nothingToChoose")}
                                 </div>
                               ) : (
                                 (field.options ?? []).map((option) => (
@@ -427,8 +434,8 @@ export function EntityForm<Schema extends z.ZodTypeAny>({
             {confirmingDiscard ? (
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm">
-                  <span className="font-medium">Discard your changes?</span>{" "}
-                  <span className="text-muted-foreground">This cannot be undone.</span>
+                  <span className="font-medium">{tCommon("discardPrompt")}</span>{" "}
+                  <span className="text-muted-foreground">{tCommon("discardHint")}</span>
                 </p>
                 <div className="flex gap-2">
                   <Button
@@ -437,7 +444,7 @@ export function EntityForm<Schema extends z.ZodTypeAny>({
                     size="sm"
                     onClick={() => setConfirmingDiscard(false)}
                   >
-                    Keep editing
+                    {tCommon("keepEditing")}
                   </Button>
                   <Button
                     type="button"
@@ -448,7 +455,7 @@ export function EntityForm<Schema extends z.ZodTypeAny>({
                       onOpenChange(false);
                     }}
                   >
-                    Discard
+                    {tCommon("discard")}
                   </Button>
                 </div>
               </div>
@@ -458,28 +465,27 @@ export function EntityForm<Schema extends z.ZodTypeAny>({
                   {errorCount > 0 ? (
                     <span className="flex items-center gap-1.5 text-danger">
                       <AlertCircle className="size-3.5" />
-                      {errorCount} field{errorCount === 1 ? "" : "s"} need
-                      {errorCount === 1 ? "s" : ""} attention
+                      {tCommon("fieldsNeedAttention", { count: errorCount })}
                     </span>
                   ) : isDirty ? (
                     <span className="flex items-center gap-1.5">
                       <span className="size-1.5 rounded-full bg-warning" />
-                      Unsaved changes
+                      {tCommon("unsavedChanges")}
                     </span>
                   ) : mode === "edit" ? (
                     <span className="flex items-center gap-1.5">
-                      <Check className="size-3.5" /> No changes yet
+                      <Check className="size-3.5" /> {tCommon("noChangesYet")}
                     </span>
                   ) : (
                     <span className="hidden sm:inline">
-                      <Kbd>⌘</Kbd> <Kbd>↵</Kbd> to save
+                      <Kbd>⌘</Kbd> <Kbd>↵</Kbd> {tCommon("saveShortcut")}
                     </span>
                   )}
                 </p>
 
                 <div className="flex shrink-0 gap-2">
                   <Button type="button" variant="ghost" onClick={() => requestClose(false)}>
-                    Cancel
+                    {tCommon("cancel")}
                   </Button>
                   {/* Exactly one primary action, nothing destructive beside it. */}
                   <Button type="submit" disabled={submitting || (mode === "edit" && !isDirty)}>

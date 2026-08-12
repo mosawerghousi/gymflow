@@ -1,13 +1,13 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
-import { useState, useTransition } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { signIn } from "next-auth/react";
+import { useState, useTransition } from "react";
 import { ArrowRight, Loader2, LogIn } from "lucide-react";
 import { toast } from "sonner";
 
-import { useRouter } from "@/i18n/routing";
+import { DEFAULT_LOCALE } from "@/i18n/config";
 import { Ltr } from "@/presentation/components/i18n/bidi";
 import { Button } from "@/presentation/components/ui/button";
 import { Input } from "@/presentation/components/ui/input";
@@ -18,32 +18,40 @@ import { cn } from "@/presentation/lib/utils";
 export function LoginForm() {
   const t = useTranslations("auth");
   const tRoles = useTranslations("roles");
-  const router = useRouter();
   const searchParams = useSearchParams();
+  const locale = useLocale();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
+  const localePrefix = locale === DEFAULT_LOCALE ? "" : `/${locale}`;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<string | null>(null);
-  const [isRouting, startTransition] = useTransition();
+  const [isRouting] = useTransition();
 
   async function submit(credentials: { email: string; password: string }) {
     setError(null);
 
-    const result = await signIn("credentials", { ...credentials, redirect: false });
+    await signIn("credentials", { ...credentials, redirect: false }).catch(() => undefined);
 
-    if (!result || result.error) {
+    // Success is decided by whether a session now exists, not by what `signIn`
+    // returns: on this Auth.js beta it sets the session cookie and still
+    // resolves to a falsy value, which silently stranded the user on /login.
+    const session = await (await fetch("/api/auth/session")).json().catch(() => null);
+
+    if (!session?.user) {
       setError(t("failed"));
       setPending(null);
       return;
     }
 
     toast.success(t("welcomeBack"));
-    startTransition(() => {
-      router.push(callbackUrl);
-      router.refresh();
-    });
+
+    // A full navigation, not a client-side push: the session cookie has just
+    // been set and every screen behind it is server-rendered against that
+    // session, so the server has to see the cookie on the next request.
+    // Keeping the locale prefix means a Dari user lands on a Dari dashboard.
+    window.location.assign(localePrefix + callbackUrl);
   }
 
   /** One click: fill the form, then submit it. */

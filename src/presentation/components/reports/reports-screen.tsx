@@ -1,6 +1,7 @@
 "use client";
 
 import { Activity, Download, Flame, TrendingDown, UserPlus, Users } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import {
   Area,
   AreaChart,
@@ -15,6 +16,13 @@ import {
   YAxis,
 } from "recharts";
 
+import { MemberCode } from "@/presentation/components/i18n/bidi";
+import {
+  formatCount,
+  formatDate as fmtDate,
+  formatHour,
+  formatMoney as fmtMoney,
+} from "@/presentation/lib/format";
 import { MemberAvatar } from "@/presentation/components/shared/member-avatar";
 import { StatCard } from "@/presentation/components/shared/stat-card";
 import {
@@ -55,13 +63,22 @@ import {
 import { reportRangePresetChanged } from "@/presentation/store/ui-slice";
 
 const PRESETS = [
-  { days: 30, label: "30 days" },
-  { days: 90, label: "90 days" },
-  { days: 180, label: "6 months" },
-  { days: 365, label: "1 year" },
-];
+  { days: 30, key: "range30" },
+  { days: 90, key: "range90" },
+  { days: 180, key: "range180" },
+  { days: 365, key: "range365" },
+] as const;
 
-const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+/** Index 0 = Sunday, matching the SQL `dow` the heatmap is bucketed by. */
+const WEEKDAY_KEYS = [
+  "sunday",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+] as const;
 
 /** Restrained palette: accent for the series that matters, greys for the rest. */
 const CHART_TOOLTIP = {
@@ -82,6 +99,11 @@ const AXIS_TICK = { fontSize: 11, fill: "var(--color-muted-foreground)" } as con
  * control drives every widget on the screen.
  */
 export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean }) {
+  const t = useTranslations("reports");
+  const tCommon = useTranslations("common");
+  const tDays = useTranslations("weekdays");
+  const locale = useLocale();
+  const ctx = { locale };
   const dispatch = useAppDispatch();
   const days = useAppSelector((state) => state.ui.reportRangeDays);
 
@@ -99,7 +121,7 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
         <div className="flex flex-wrap items-center gap-2">
           <div
             role="group"
-            aria-label="Report date range"
+            aria-label={t("rangeLabel")}
             className="flex rounded-md border border-border p-0.5"
           >
             {PRESETS.map((preset) => (
@@ -115,20 +137,20 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                {preset.label}
+                {t(preset.key)}
               </button>
             ))}
           </div>
 
           <p className="text-xs text-muted-foreground">
             {overview.data
-              ? `${formatDate(overview.data.range.from)} – ${formatDate(overview.data.range.to)}`
-              : "—"}
+              ? `${fmtDate(overview.data.range.from, ctx)} – ${fmtDate(overview.data.range.to, ctx)}`
+              : tCommon("dash")}
           </p>
 
           <Button asChild variant="ghost" size="sm" className="ms-auto">
             <a href={`/api/export/csv?report=checkins&days=${days}`}>
-              <Download /> Export CSV
+              <Download /> {tCommon("exportCsv")}
             </a>
           </Button>
         </div>
@@ -143,7 +165,7 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
             <Card className="py-0 sm:col-span-2 xl:col-span-4">
               <CardContent className="px-0">
                 <ErrorState
-                  title="The headline figures did not load"
+                  title={t("headlineFailed")}
                   onRetry={() => void overview.refetch()}
                 />
               </CardContent>
@@ -151,31 +173,31 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
           ) : (
             <>
               <StatCard
-                label="Active members"
-                value={overview.data.membership.active}
-                hint={`${overview.data.membership.total} on file`}
+                label={t("activeMembers")}
+                value={formatCount(overview.data.membership.active, ctx)}
+                hint={tCommon("members", { count: overview.data.membership.total })}
                 icon={Users}
               />
               <StatCard
-                label="Sign-ups"
-                value={overview.data.signups.value}
+                label={t("signups")}
+                value={formatCount(overview.data.signups.value, ctx)}
                 changePct={overview.data.signups.changePct}
-                hint="vs. previous period"
+                hint={t("vsPrevious")}
                 icon={UserPlus}
               />
               <StatCard
-                label="Cancellations"
-                value={overview.data.churn.value}
+                label={t("cancellations")}
+                value={formatCount(overview.data.churn.value, ctx)}
                 changePct={overview.data.churn.changePct}
                 invertTrend
-                hint={`${overview.data.churnRatePct.toFixed(1)}% churn`}
+                hint={t("churnRate", { rate: formatCount(overview.data.churnRatePct, ctx) })}
                 icon={TrendingDown}
               />
               <StatCard
-                label="Check-ins"
-                value={overview.data.checkins.value}
+                label={t("checkins")}
+                value={formatCount(overview.data.checkins.value, ctx)}
                 changePct={overview.data.checkins.changePct}
-                hint={`${overview.data.averageVisitsPerActiveMember} per active member`}
+                hint={t("perActiveMember", { count: formatCount(overview.data.averageVisitsPerActiveMember, ctx) })}
                 icon={Activity}
               />
             </>
@@ -184,10 +206,10 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
 
         <Tabs defaultValue="traffic">
           <TabsList>
-            <TabsTrigger value="traffic">Traffic</TabsTrigger>
-            <TabsTrigger value="growth">Growth</TabsTrigger>
-            <TabsTrigger value="retention">Retention</TabsTrigger>
-            <TabsTrigger value="team">Team</TabsTrigger>
+            <TabsTrigger value="traffic">{t("tabTraffic")}</TabsTrigger>
+            <TabsTrigger value="growth">{t("tabGrowth")}</TabsTrigger>
+            <TabsTrigger value="retention">{t("tabRetention")}</TabsTrigger>
+            <TabsTrigger value="team">{t("tabTeam")}</TabsTrigger>
           </TabsList>
 
           {/* Traffic — the heatmap is the centrepiece. */}
@@ -195,12 +217,16 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Flame className="size-4 text-primary" /> Busiest hours
+                  <Flame className="size-4 text-primary" /> {t("busiestHours")}
                 </CardTitle>
                 <CardDescription>
                   {busiest.data?.peak
-                    ? `The floor peaks ${DAY_LABELS[busiest.data.peak.dayOfWeek]} at ${String(busiest.data.peak.hour).padStart(2, "0")}:00 — ${busiest.data.peak.count} check-ins in this window. Staff that slot first.`
-                    : "Not enough check-ins yet to find a peak."}
+                    ? t("busiestPeak", {
+                        day: tDays(WEEKDAY_KEYS[busiest.data.peak.dayOfWeek]!),
+                        time: formatHour(busiest.data.peak.hour, ctx),
+                        count: formatCount(busiest.data.peak.count, ctx),
+                      })
+                    : t("busiestNoPeak")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -209,7 +235,7 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
                 ) : busiest.isError || !busiest.data ? (
                   <ErrorState compact onRetry={() => void busiest.refetch()} />
                 ) : (
-                  <Heatmap data={busiest.data.matrix} />
+                  <Heatmap data={busiest.data.matrix} ctx={ctx} />
                 )}
               </CardContent>
             </Card>
@@ -217,9 +243,9 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
             <div className="grid gap-4 lg:grid-cols-2">
               <Card>
                 <CardHeader>
-                  <CardTitle>Check-ins per day</CardTitle>
+                  <CardTitle>{t("checkinsPerDay")}</CardTitle>
                   <CardDescription>
-                    {trends.data ? describeSeries(trends.data.checkins, "visits") : "—"}
+                    {trends.data ? describeSeries(trends.data.checkins, t, ctx) : tCommon("dash")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -277,9 +303,9 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
                         </ResponsiveContainer>
                       </div>
                       <SeriesTable
-                        caption="Check-ins per day"
+                        caption={t("seriesCaption", { label: t("checkins") })}
                         rows={trends.data.checkins}
-                        valueLabel="Check-ins"
+                        valueLabel={t("checkins")}
                       />
                     </>
                   )}
@@ -288,11 +314,14 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
 
               <Card>
                 <CardHeader>
-                  <CardTitle>By hour of day</CardTitle>
+                  <CardTitle>{t("byHourOfDay")}</CardTitle>
                   <CardDescription>
                     {busiest.data
-                      ? `Evenings carry the load — ${eveningShare(busiest.data.byHour)}% of visits land after 17:00.`
-                      : "—"}
+                      ? t("eveningShare", {
+                          percent: formatCount(eveningShare(busiest.data.byHour), ctx),
+                          time: formatHour(17, ctx),
+                        })
+                      : tCommon("dash")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -337,16 +366,28 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
           <TabsContent value="growth" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Sign-ups vs. cancellations</CardTitle>
+                <CardTitle>{t("signupsVsCancellations")}</CardTitle>
                 <CardDescription>
                   {overview.data
-                    ? `${overview.data.signups.value} joined and ${overview.data.churn.value} cancelled — a net ${overview.data.signups.value - overview.data.churn.value >= 0 ? "gain" : "loss"} of ${Math.abs(overview.data.signups.value - overview.data.churn.value)} members.`
-                    : "—"}
+                    ? t(
+                        overview.data.signups.value - overview.data.churn.value >= 0
+                          ? "netGain"
+                          : "netLoss",
+                        {
+                          signups: formatCount(overview.data.signups.value, ctx),
+                          churn: formatCount(overview.data.churn.value, ctx),
+                          net: formatCount(
+                            Math.abs(overview.data.signups.value - overview.data.churn.value),
+                            ctx,
+                          ),
+                        },
+                      )
+                    : tCommon("dash")}
                 </CardDescription>
                 <CardAction>
                   <Button asChild variant="ghost" size="sm">
                     <a href={`/api/export/csv?report=signups&days=${days}`}>
-                      <Download /> CSV
+                      <Download /> {tCommon("csv")}
                     </a>
                   </Button>
                 </CardAction>
@@ -402,9 +443,9 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
                       </ResponsiveContainer>
                     </div>
                     <SeriesTable
-                      caption="Sign-ups per day"
+                      caption={t("seriesCaption", { label: t("signups") })}
                       rows={trends.data.signups}
-                      valueLabel="Sign-ups"
+                      valueLabel={t("signups")}
                     />
                   </>
                 )}
@@ -413,11 +454,11 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
 
             <Card>
               <CardHeader>
-                <CardTitle>Members by plan</CardTitle>
+                <CardTitle>{t("membersByPlan")}</CardTitle>
                 <CardDescription>
                   {overview.data && overview.data.plans.length > 0
-                    ? `${topPlan(overview.data.plans)} carries the most members.`
-                    : "—"}
+                    ? t("topPlan", { plan: topPlan(overview.data.plans) })
+                    : tCommon("dash")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -436,7 +477,8 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
                           <div className="flex items-baseline justify-between gap-3 text-sm">
                             <span>{plan.planName}</span>
                             <span data-numeric className="text-muted-foreground">
-                              {plan.memberCount} · {formatMoney(plan.monthlyRevenueCents)}/mo
+                              {formatCount(plan.memberCount, ctx)} ·{" "}
+                              {t("perMonth", { amount: fmtMoney(plan.monthlyRevenueCents, ctx) })}
                             </span>
                           </div>
                           <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
@@ -458,18 +500,18 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
           <TabsContent value="retention">
             <Card className="overflow-hidden py-0">
               <CardHeader className="border-b py-4">
-                <CardTitle>At-risk members</CardTitle>
+                <CardTitle>{t("atRiskTitle")}</CardTitle>
                 <CardDescription>
                   {atRisk.data
                     ? atRisk.data.length === 0
-                      ? "Nobody has drifted — every active member has been in within 30 days."
-                      : `${atRisk.data.length} paid-up members have not been in for 30 days. This is the call list.`
-                    : "—"}
+                      ? t("atRiskNone")
+                      : t("atRiskSome", { count: formatCount(atRisk.data.length, ctx) })
+                    : tCommon("dash")}
                 </CardDescription>
                 <CardAction>
                   <Button asChild variant="ghost" size="sm">
                     <a href={`/api/export/csv?report=at-risk&days=${days}`}>
-                      <Download /> CSV
+                      <Download /> {tCommon("csv")}
                     </a>
                   </Button>
                 </CardAction>
@@ -482,17 +524,17 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
                 ) : (atRisk.data ?? []).length === 0 ? (
                   <EmptyState
                     icon={Users}
-                    title="Nobody is at risk"
-                    description="Every active member has visited in the last 30 days."
+                    title={t("atRiskEmpty")}
+                    description={t("atRiskEmptyHint")}
                   />
                 ) : (
                   <DataTable minWidth="42rem">
                     <TableHead>
                       <TableRow>
-                        <TableHeaderCell>Member</TableHeaderCell>
-                        <TableHeaderCell>Email</TableHeaderCell>
-                        <TableHeaderCell align="right">Last visit</TableHeaderCell>
-                        <TableHeaderCell align="right">Plan ends</TableHeaderCell>
+                        <TableHeaderCell>{t("columnMember")}</TableHeaderCell>
+                        <TableHeaderCell>{t("columnEmail")}</TableHeaderCell>
+                        <TableHeaderCell align="right">{t("columnLastVisit")}</TableHeaderCell>
+                        <TableHeaderCell align="right">{t("columnPlanEnds")}</TableHeaderCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -508,14 +550,12 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
                                 >
                                   {member.fullName}
                                 </a>
-                                <p className="font-mono text-2xs text-muted-foreground">
-                                  {member.memberCode}
-                                </p>
+                                <MemberCode code={member.memberCode} className="text-2xs text-muted-foreground" />
                               </div>
                             </div>
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
-                            {member.email ?? "—"}
+                            {member.email ? <MemberCode code={member.email} /> : tCommon("dash")}
                           </TableCell>
                           <TableCell align="right" className="text-sm">
                             <span
@@ -526,12 +566,12 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
                               }
                             >
                               {member.daysSinceLastVisit === null
-                                ? "never"
-                                : `${member.daysSinceLastVisit}d ago`}
+                                ? tCommon("never")
+                                : tCommon("daysAgo", { count: member.daysSinceLastVisit })}
                             </span>
                           </TableCell>
                           <TableCell align="right" className="text-sm text-muted-foreground">
-                            {member.membershipEndsAt ? formatDate(member.membershipEndsAt) : "—"}
+                            {member.membershipEndsAt ? fmtDate(member.membershipEndsAt, ctx) : tCommon("dash")}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -547,16 +587,19 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
             {canSeeStaffHours ? (
               <Card>
                 <CardHeader>
-                  <CardTitle>Staff hours</CardTitle>
+                  <CardTitle>{t("staffHours")}</CardTitle>
                   <CardDescription>
                     {staffHours.data
-                      ? `${staffHours.data.totalScheduledHours} hours rostered across ${staffHours.data.rows.length} people.`
-                      : "—"}
+                      ? t("staffHoursSummary", {
+                          hours: formatCount(staffHours.data.totalScheduledHours, ctx),
+                          people: formatCount(staffHours.data.rows.length, ctx),
+                        })
+                      : tCommon("dash")}
                   </CardDescription>
                   <CardAction>
                     <Button asChild variant="ghost" size="sm">
                       <a href={`/api/export/csv?report=staff-hours&days=${days}`}>
-                        <Download /> CSV
+                        <Download /> {tCommon("csv")}
                       </a>
                     </Button>
                   </CardAction>
@@ -607,16 +650,16 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
 
             <Card className="overflow-hidden py-0">
               <CardHeader className="border-b py-4">
-                <CardTitle>Trainer performance</CardTitle>
+                <CardTitle>{t("trainerPerformance")}</CardTitle>
                 <CardDescription>
                   {trainers.data && trainers.data.rows.length > 0
-                    ? describeTrainers(trainers.data.rows)
-                    : "No sessions in this window."}
+                    ? describeTrainers(trainers.data.rows, t, ctx)
+                    : t("trainerNoSessions")}
                 </CardDescription>
                 <CardAction>
                   <Button asChild variant="ghost" size="sm">
                     <a href={`/api/export/csv?report=trainer-performance&days=${days}`}>
-                      <Download /> CSV
+                      <Download /> {tCommon("csv")}
                     </a>
                   </Button>
                 </CardAction>
@@ -626,18 +669,18 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
                   <TableSkeleton rows={4} columns={5} />
                 ) : !trainers.data || trainers.data.rows.length === 0 ? (
                   <EmptyState
-                    title="No sessions yet"
-                    description="Book a trainer session and completion rates will appear here."
+                    title={t("noSessionsYet")}
+                    description={t("noSessionsYetHint")}
                   />
                 ) : (
                   <DataTable minWidth="44rem">
                     <TableHead>
                       <TableRow>
-                        <TableHeaderCell>Trainer</TableHeaderCell>
-                        <TableHeaderCell align="right">Booked</TableHeaderCell>
-                        <TableHeaderCell align="right">Completed</TableHeaderCell>
-                        <TableHeaderCell align="right">No-show</TableHeaderCell>
-                        <TableHeaderCell>Completion</TableHeaderCell>
+                        <TableHeaderCell>{t("columnTrainer")}</TableHeaderCell>
+                        <TableHeaderCell align="right">{t("columnBooked")}</TableHeaderCell>
+                        <TableHeaderCell align="right">{t("columnCompleted")}</TableHeaderCell>
+                        <TableHeaderCell align="right">{t("columnNoShow")}</TableHeaderCell>
+                        <TableHeaderCell>{t("columnCompletion")}</TableHeaderCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -650,10 +693,10 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
                             </div>
                           </TableCell>
                           <TableCell align="right" className="text-sm">
-                            {row.booked}
+                            {formatCount(row.booked, ctx)}
                           </TableCell>
                           <TableCell align="right" className="text-sm">
-                            {row.completed}
+                            {formatCount(row.completed, ctx)}
                           </TableCell>
                           <TableCell align="right" className="text-sm">
                             <span className={row.noShow > 0 ? "text-warning" : undefined}>
@@ -669,7 +712,7 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
                                 />
                               </div>
                               <span data-numeric className="text-sm text-muted-foreground">
-                                {row.completionRate.toFixed(0)}%
+                                {formatCount(Math.round(row.completionRate), ctx)}%
                               </span>
                             </div>
                           </TableCell>
@@ -691,7 +734,9 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
  * Day × hour grid; opacity encodes volume against the busiest cell.
  * The visually-hidden table underneath is what a screen reader gets.
  */
-function Heatmap({ data }: { data: number[][] }) {
+function Heatmap({ data, ctx }: { data: number[][]; ctx: { locale: string } }) {
+  const t = useTranslations("reports");
+  const tDays = useTranslations("weekdays");
   const max = Math.max(1, ...data.flat());
 
   return (
@@ -701,7 +746,7 @@ function Heatmap({ data }: { data: number[][] }) {
           <div />
           {Array.from({ length: 24 }, (_, hour) => (
             <div key={hour} className="text-center text-2xs text-muted-foreground">
-              {hour % 3 === 0 ? String(hour).padStart(2, "0") : ""}
+              {hour % 3 === 0 ? formatHour(hour, ctx).slice(0, 2) : ""}
             </div>
           ))}
         </div>
@@ -712,12 +757,12 @@ function Heatmap({ data }: { data: number[][] }) {
             className="mb-0.5 grid grid-cols-[2.75rem_repeat(24,minmax(0,1fr))] gap-0.5"
           >
             <div className="pe-2 text-end text-2xs text-muted-foreground">
-              {DAY_LABELS[dayIndex]}
+              {tDays(WEEKDAY_KEYS[dayIndex]!)}
             </div>
             {row.map((count, hour) => (
               <div
                 key={hour}
-                title={`${DAY_LABELS[dayIndex]} ${String(hour).padStart(2, "0")}:00 — ${count} check-ins`}
+                title={`${tDays(WEEKDAY_KEYS[dayIndex]!)} ${formatHour(hour, ctx)} — ${formatCount(count, ctx)}`}
                 className="aspect-square rounded-[3px] bg-primary"
                 style={{ opacity: count === 0 ? 0.06 : 0.18 + (count / max) * 0.82 }}
               />
@@ -726,22 +771,22 @@ function Heatmap({ data }: { data: number[][] }) {
         ))}
 
         <div className="mt-3 flex items-center justify-end gap-1.5 text-2xs text-muted-foreground">
-          <span>Quiet</span>
+          <span>{t("quiet")}</span>
           {[0.06, 0.3, 0.55, 0.78, 1].map((opacity) => (
             <span key={opacity} className="size-3 rounded-[3px] bg-primary" style={{ opacity }} />
           ))}
-          <span>Busy</span>
+          <span>{t("busy")}</span>
         </div>
       </div>
 
       <table className="sr-only">
-        <caption>Check-ins by day of week and hour of day</caption>
+        <caption>{t("heatmapCaption")}</caption>
         <thead>
           <tr>
-            <th scope="col">Day</th>
+            <th scope="col">{t("day")}</th>
             {Array.from({ length: 24 }, (_, hour) => (
               <th key={hour} scope="col">
-                {String(hour).padStart(2, "0")}:00
+                {formatHour(hour, ctx)}
               </th>
             ))}
           </tr>
@@ -749,7 +794,7 @@ function Heatmap({ data }: { data: number[][] }) {
         <tbody>
           {data.map((row, dayIndex) => (
             <tr key={dayIndex}>
-              <th scope="row">{DAY_LABELS[dayIndex]}</th>
+              <th scope="row">{tDays(WEEKDAY_KEYS[dayIndex]!)}</th>
               {row.map((count, hour) => (
                 <td key={hour}>{count}</td>
               ))}
@@ -771,12 +816,14 @@ function SeriesTable({
   rows: Array<{ date: string; count: number }>;
   valueLabel: string;
 }) {
+  const tDate = useTranslations("reports")("date");
+
   return (
     <table className="sr-only">
       <caption>{caption}</caption>
       <thead>
         <tr>
-          <th scope="col">Date</th>
+          <th scope="col">{tDate}</th>
           <th scope="col">{valueLabel}</th>
         </tr>
       </thead>
@@ -808,24 +855,34 @@ function joinSeries(trends: {
 /* Insight sentences — the line that turns a chart into a finding              */
 /* -------------------------------------------------------------------------- */
 
-function describeSeries(points: Array<{ count: number }>, noun: string): string {
-  const total = points.reduce((sum, point) => sum + point.count, 0);
+type Translator = (key: string, values?: Record<string, string | number | Date>) => string;
 
-  if (points.length < 4) return `${total} ${noun} in this window.`;
+function describeSeries(
+  points: Array<{ count: number }>,
+  t: Translator,
+  ctx: { locale: string },
+): string {
+  const sum = points.reduce((acc, point) => acc + point.count, 0);
+  const total = formatCount(sum, ctx);
+  const noun = t("nounVisits");
+
+  if (points.length < 4) return t("seriesTotal", { total, noun });
 
   const half = Math.floor(points.length / 2);
-  const earlier = points.slice(0, half).reduce((sum, p) => sum + p.count, 0);
-  const later = points.slice(half).reduce((sum, p) => sum + p.count, 0);
+  const earlier = points.slice(0, half).reduce((acc, p) => acc + p.count, 0);
+  const later = points.slice(half).reduce((acc, p) => acc + p.count, 0);
 
-  if (earlier === 0) return `${total} ${noun} in this window.`;
+  if (earlier === 0) return t("seriesTotal", { total, noun });
 
   const change = Math.round(((later - earlier) / earlier) * 100);
 
-  if (Math.abs(change) < 5) {
-    return `${total} ${noun}, steady across the window.`;
-  }
+  if (Math.abs(change) < 5) return t("seriesSteady", { total, noun });
 
-  return `${total} ${noun} — the second half was ${Math.abs(change)}% ${change > 0 ? "busier" : "quieter"} than the first.`;
+  return t(change > 0 ? "seriesBusier" : "seriesQuieter", {
+    total,
+    noun,
+    change: formatCount(Math.abs(change), ctx),
+  });
 }
 
 function eveningShare(byHour: Array<{ hour: number; count: number }>): number {
@@ -845,26 +902,20 @@ function topPlan(plans: Array<{ planName: string; memberCount: number }>): strin
 
 function describeTrainers(
   rows: Array<{ name: string; completionRate: number; noShow: number }>,
+  t: Translator,
+  ctx: { locale: string },
 ): string {
   const withSessions = rows.filter((row) => row.completionRate > 0 || row.noShow > 0);
 
-  if (withSessions.length === 0) return "No completed sessions in this window.";
+  if (withSessions.length === 0) return t("trainerNoSessions");
 
   const best = [...withSessions].sort((a, b) => b.completionRate - a.completionRate)[0]!;
-  const noShows = rows.reduce((sum, row) => sum + row.noShow, 0);
 
-  return `${best.name} leads on completion at ${best.completionRate.toFixed(0)}%. ${noShows} no-show${noShows === 1 ? "" : "s"} across the team.`;
-}
-
-function formatMoney(cents: number): string {
-  return `$${Math.round(cents / 100).toLocaleString("en-US")}`;
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "2-digit",
-    timeZone: "UTC",
+  return t("trainerSummary", {
+    name: best.name,
+    rate: formatCount(Math.round(best.completionRate), ctx),
+    noShows: formatCount(rows.reduce((sum, row) => sum + row.noShow, 0), ctx),
   });
 }
+
+

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -28,10 +29,7 @@ export const sessionFormSchema = z.object({
 
 export type SessionFormValues = z.infer<typeof sessionFormSchema>;
 
-const DURATIONS = [30, 45, 60, 90, 120].map((minutes) => ({
-  value: String(minutes),
-  label: `${minutes} minutes`,
-}));
+const DURATION_CHOICES = [30, 45, 60, 90, 120];
 
 /**
  * Booking a trainer session.
@@ -54,6 +52,8 @@ export function SessionForm({
   defaultValues?: Partial<TrainerSessionDto>;
   onSuccess?: (session: TrainerSessionDto) => void;
 }) {
+  const t = useTranslations("forms");
+  const tCommon = useTranslations("common");
   const [bookSession] = useBookSessionMutation();
   const [updateSession] = useUpdateSessionMutation();
 
@@ -80,39 +80,42 @@ export function SessionForm({
   const fields: Array<FieldConfig<SessionFormValues>> = [
     {
       name: "trainerId",
-      label: "Trainer",
+      label: t("trainer"),
       kind: "select",
       required: true,
-      placeholder: "Pick a trainer",
+      placeholder: t("pickTrainer"),
       options: trainers.map((trainer) => ({ value: trainer.id, label: trainer.name })),
     },
     {
       name: "memberId",
-      label: "Member",
+      label: t("member"),
       kind: "select",
       required: true,
-      placeholder: memberOptions.length > 0 ? "Choose a member" : "Type below to search",
+      placeholder: memberOptions.length > 0 ? t("chooseMember") : t("typeToSearch"),
       options: memberOptions,
-      hint: "Search by name, code, email or phone in the box below.",
+      hint: t("memberSearchHint"),
     },
-    { name: "date", label: "Date", kind: "date", required: true },
-    { name: "startTime", label: "Starts", kind: "text", required: true, half: true, placeholder: "11:00" },
+    { name: "date", label: t("date"), kind: "date", required: true },
+    { name: "startTime", label: t("starts"), kind: "text", required: true, half: true, placeholder: "11:00" },
     {
       name: "durationMinutes",
-      label: "Duration",
+      label: t("duration"),
       kind: "select",
       required: true,
       half: true,
-      options: DURATIONS,
+      options: DURATION_CHOICES.map((minutes) => ({
+        value: String(minutes),
+        label: tCommon("minutes", { count: minutes }),
+      })),
     },
-    { name: "notes", label: "Notes", kind: "textarea", rows: 2 },
+    { name: "notes", label: t("notes"), kind: "textarea", rows: 2 },
   ];
 
   return (
     <EntityForm
       mode={mode}
-      entityLabel="session"
-      description="A slot is only bookable inside one of the trainer's shifts."
+      entityLabel="entitySession"
+      description={t("sessionDescription")}
       schema={sessionFormSchema}
       fields={fields}
       open={open}
@@ -125,7 +128,7 @@ export function SessionForm({
         durationMinutes: defaultValues?.durationMinutes ?? 60,
         notes: defaultValues?.notes,
       }}
-      submitLabel={{ create: "Book session", edit: "Save changes" }}
+      submitLabel={{ create: t("bookSession"), edit: tCommon("save") }}
       onSubmit={async (values) => {
         try {
           const session =
@@ -142,10 +145,10 @@ export function SessionForm({
                   notes: values.notes ?? null,
                 }).unwrap();
 
-          toast.success(mode === "create" ? "Session booked." : "Session updated.");
+          toast.success(mode === "create" ? t("sessionBooked") : t("sessionUpdated"));
           onSuccess?.(session);
         } catch (error) {
-          toast.error(apiErrorMessage(error, "Could not save the session."));
+          toast.error(apiErrorMessage(error, t("sessionSaveFailed")));
           throw error;
         }
       }}
@@ -154,19 +157,19 @@ export function SessionForm({
           shared form shell stays generic. */}
       <div className="space-y-1.5 rounded-md border border-border bg-surface-2 p-3">
         <label htmlFor="member-search" className="text-xs font-medium text-secondary-foreground">
-          Find a member
+          {t("findMember")}
         </label>
         <input
           id="member-search"
           value={memberQuery}
           onChange={(event) => setMemberQuery(event.target.value)}
-          placeholder="Name, code, email or phone…"
+          placeholder={t("findMemberPlaceholder")}
           className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         />
         <p className="text-xs text-muted-foreground">
           {memberQuery.trim().length < 2
-            ? "Type at least two characters."
-            : `${matches.length} match${matches.length === 1 ? "" : "es"} — pick one in the Member field above.`}
+            ? t("typeTwoChars")
+            : t("matchCount", { count: matches.length })}
         </p>
       </div>
     </EntityForm>

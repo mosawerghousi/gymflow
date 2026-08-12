@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import {
   Check,
   Copy,
@@ -16,6 +17,7 @@ import { toast } from "sonner";
 
 import type { PlanDto } from "@/application/dto/settings.dto";
 import { WEEKDAYS } from "@/domain/entities/operating-hours";
+import { formatCount, formatDate as fmtDate, formatMoney as fmtMoney } from "@/presentation/lib/format";
 import { PlanForm } from "@/presentation/components/forms/plan-form";
 import { MemberAvatar } from "@/presentation/components/shared/member-avatar";
 import { EmptyState, ErrorState, ListSkeleton } from "@/presentation/components/shared/states";
@@ -70,17 +72,17 @@ import {
 } from "@/presentation/store/api/reports-api";
 
 export function SettingsScreen({ isDemoAccount }: { isDemoAccount: boolean }) {
+  const t = useTranslations("settings");
+
   return (
     <div className="space-y-5 px-5 pb-10 sm:px-8">
       {isDemoAccount ? (
         <div className="flex items-start gap-3 rounded-lg border border-warning/35 bg-warning-subtle px-4 py-3">
           <ShieldAlert className="mt-0.5 size-4.5 shrink-0 text-warning" />
           <div className="text-sm">
-            <p className="font-medium text-warning">Demo guardrails are on</p>
+            <p className="font-medium text-warning">{t("demoGuardTitle")}</p>
             <p className="mt-0.5 text-muted-foreground">
-              Create plans, invite staff and edit hours freely. Revoking a kiosk token and
-              changing passwords are blocked so the public demo keeps working, and a nightly job
-              restores the seed.
+              {t("demoGuardBody")}
             </p>
           </div>
         </div>
@@ -88,10 +90,10 @@ export function SettingsScreen({ isDemoAccount }: { isDemoAccount: boolean }) {
 
       <Tabs defaultValue="plans">
         <TabsList>
-          <TabsTrigger value="plans">Plans</TabsTrigger>
-          <TabsTrigger value="hours">Opening hours</TabsTrigger>
-          <TabsTrigger value="kiosks">Kiosks</TabsTrigger>
-          <TabsTrigger value="team">Team</TabsTrigger>
+          <TabsTrigger value="plans">{t("tabPlans")}</TabsTrigger>
+          <TabsTrigger value="hours">{t("tabHours")}</TabsTrigger>
+          <TabsTrigger value="kiosks">{t("tabKiosks")}</TabsTrigger>
+          <TabsTrigger value="team">{t("tabTeam")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="plans">
@@ -112,6 +114,10 @@ export function SettingsScreen({ isDemoAccount }: { isDemoAccount: boolean }) {
 }
 
 function PlansPanel() {
+  const t = useTranslations("settings");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
+  const ctx = { locale };
   const { data: plans = [], isLoading, isError, refetch } = useListPlansAdminQuery();
   const [updatePlan] = useUpdatePlanMutation();
 
@@ -135,13 +141,13 @@ function PlansPanel() {
     <>
       <Card className="overflow-hidden py-0">
         <CardHeader className="border-b py-4">
-          <CardTitle>Membership plans</CardTitle>
+          <CardTitle>{t("plansTitle")}</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Archiving a plan takes it off sale without touching terms already bought.
+            {t("plansHint")}
           </p>
           <CardAction>
             <Button size="sm" onClick={openCreate}>
-              <Plus /> Add plan
+              <Plus /> {t("addPlan")}
             </Button>
           </CardAction>
         </CardHeader>
@@ -155,11 +161,11 @@ function PlansPanel() {
             </div>
           ) : plans.length === 0 ? (
             <EmptyState
-              title="No plans yet"
-              description="Create the first plan so members have something to buy."
+              title={t("noPlans")}
+              description={t("noPlansHint")}
               action={
                 <Button size="sm" onClick={openCreate}>
-                  <Plus /> Add plan
+                  <Plus /> {t("addPlan")}
                 </Button>
               }
             />
@@ -167,13 +173,13 @@ function PlansPanel() {
             <DataTable minWidth="40rem">
               <TableHead>
                 <TableRow>
-                  <TableHeaderCell>Plan</TableHeaderCell>
-                  <TableHeaderCell align="right">Price</TableHeaderCell>
-                  <TableHeaderCell align="right">Duration</TableHeaderCell>
-                  <TableHeaderCell align="right">Members</TableHeaderCell>
-                  <TableHeaderCell align="center">On sale</TableHeaderCell>
+                  <TableHeaderCell>{t("columnPlan")}</TableHeaderCell>
+                  <TableHeaderCell align="right">{t("columnPrice")}</TableHeaderCell>
+                  <TableHeaderCell align="right">{t("columnDuration")}</TableHeaderCell>
+                  <TableHeaderCell align="right">{t("columnMembers")}</TableHeaderCell>
+                  <TableHeaderCell align="center">{t("columnOnSale")}</TableHeaderCell>
                   <TableHeaderCell align="right" className="w-20">
-                    <span className="sr-only">Actions</span>
+                    <span className="sr-only">{tCommon("actions")}</span>
                   </TableHeaderCell>
                 </TableRow>
               </TableHead>
@@ -189,24 +195,24 @@ function PlansPanel() {
                       ) : null}
                     </TableCell>
                     <TableCell align="right" className="text-sm">
-                      {formatMoney(plan.priceCents)}
+                      {fmtMoney(plan.priceCents, ctx)}
                     </TableCell>
                     <TableCell align="right" className="text-sm text-muted-foreground">
-                      {plan.durationDays}d
+                      {tCommon("daysShort", { count: formatCount(plan.durationDays, ctx) })}
                     </TableCell>
                     <TableCell align="right" className="text-sm text-muted-foreground">
-                      {plan.memberCount}
+                      {formatCount(plan.memberCount, ctx)}
                     </TableCell>
                     <TableCell align="center">
                       <Switch
                         checked={plan.isActive}
-                        aria-label={`${plan.name} on sale`}
+                        aria-label={t("planOnSale", { name: plan.name })}
                         onCheckedChange={async (checked) => {
                           try {
                             await updatePlan({ planId: plan.id, isActive: checked }).unwrap();
-                            toast.success(checked ? "Plan is on sale." : "Plan archived.");
+                            toast.success(checked ? t("planOnSaleToast") : t("planArchivedToast"));
                           } catch (error) {
-                            toast.error(apiErrorMessage(error, "Could not update the plan."));
+                            toast.error(apiErrorMessage(error, t("planUpdateFailed")));
                           }
                         }}
                       />
@@ -216,7 +222,7 @@ function PlansPanel() {
                         <Button
                           size="icon-sm"
                           variant="ghost"
-                          aria-label={`Edit ${plan.name}`}
+                          aria-label={t("editPlan", { name: plan.name })}
                           onClick={() => openEdit(plan)}
                         >
                           <Pencil />
@@ -243,6 +249,8 @@ function PlansPanel() {
 }
 
 function OperatingHoursPanel() {
+  const t = useTranslations("settings");
+  const tDays = useTranslations("weekdays");
   const { data, isLoading, isError, refetch } = useGetOperatingHoursQuery();
   const [save, { isLoading: isSaving }] = useUpdateOperatingHoursMutation();
   const [hours, setHours] = useState(data ?? []);
@@ -254,9 +262,9 @@ function OperatingHoursPanel() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Opening hours</CardTitle>
+        <CardTitle>{t("hoursTitle")}</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Shifts and sessions are scheduled against these.
+          {t("hoursHint")}
         </p>
       </CardHeader>
 
@@ -273,13 +281,13 @@ function OperatingHoursPanel() {
                   key={day.dayOfWeek}
                   className="flex flex-wrap items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-surface-2"
                 >
-                  <span className="w-24 text-sm font-medium capitalize">
-                    {WEEKDAYS[day.dayOfWeek]}
+                  <span className="w-24 text-sm font-medium">
+                    {tDays(WEEKDAYS[day.dayOfWeek])}
                   </span>
 
                   <Switch
                     checked={!day.isClosed}
-                    aria-label={`${WEEKDAYS[day.dayOfWeek]} open`}
+                    aria-label={t("dayOpen", { day: tDays(WEEKDAYS[day.dayOfWeek]) })}
                     onCheckedChange={(checked) =>
                       setHours(
                         hours.map((entry, i) =>
@@ -290,13 +298,13 @@ function OperatingHoursPanel() {
                   />
 
                   {day.isClosed ? (
-                    <span className="text-sm text-muted-foreground">Closed</span>
+                    <span className="text-sm text-muted-foreground">{t("closed")}</span>
                   ) : (
                     <>
                       <Input
                         type="time"
                         className="w-32"
-                        aria-label={`${WEEKDAYS[day.dayOfWeek]} opens at`}
+                        aria-label={t("opensAt", { day: tDays(WEEKDAYS[day.dayOfWeek]) })}
                         value={day.opensAt}
                         onChange={(event) =>
                           setHours(
@@ -310,7 +318,7 @@ function OperatingHoursPanel() {
                       <Input
                         type="time"
                         className="w-32"
-                        aria-label={`${WEEKDAYS[day.dayOfWeek]} closes at`}
+                        aria-label={t("closesAt", { day: tDays(WEEKDAYS[day.dayOfWeek]) })}
                         value={day.closesAt}
                         onChange={(event) =>
                           setHours(
@@ -331,13 +339,13 @@ function OperatingHoursPanel() {
               onClick={async () => {
                 try {
                   await save({ hours }).unwrap();
-                  toast.success("Opening hours saved.");
+                  toast.success(t("hoursSaved"));
                 } catch (error) {
-                  toast.error(apiErrorMessage(error, "Could not save the hours."));
+                  toast.error(apiErrorMessage(error, t("hoursSaveFailed")));
                 }
               }}
             >
-              {isSaving ? <Loader2 className="animate-spin" /> : <Check />} Save hours
+              {isSaving ? <Loader2 className="animate-spin" /> : <Check />} {t("saveHours")}
             </Button>
           </>
         )}
@@ -347,6 +355,9 @@ function OperatingHoursPanel() {
 }
 
 function KiosksPanel() {
+  const t = useTranslations("settings");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
   const { data: tokens = [], isLoading, isError, refetch } = useListKioskTokensQuery();
   const [createToken, { isLoading: isCreating }] = useCreateKioskTokenMutation();
   const [revokeToken] = useRevokeKioskTokenMutation();
@@ -360,13 +371,13 @@ function KiosksPanel() {
     <>
       <Card className="overflow-hidden py-0">
         <CardHeader className="border-b py-4">
-          <CardTitle>Paired kiosks</CardTitle>
+          <CardTitle>{t("kiosksTitle")}</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Each device holds a token that lets it create check-ins — and nothing else.
+            {t("kiosksHint")}
           </p>
           <CardAction>
             <Button size="sm" onClick={() => setPairOpen(true)}>
-              <Plus /> Pair device
+              <Plus /> {t("pairDevice")}
             </Button>
           </CardAction>
         </CardHeader>
@@ -381,11 +392,11 @@ function KiosksPanel() {
           ) : tokens.length === 0 ? (
             <EmptyState
               icon={MonitorSmartphone}
-              title="No kiosks paired"
-              description="Pair a tablet by the door and members can check themselves in."
+              title={t("noKiosks")}
+              description={t("noKiosksHint")}
               action={
                 <Button size="sm" onClick={() => setPairOpen(true)}>
-                  <Plus /> Pair device
+                  <Plus /> {t("pairDevice")}
                 </Button>
               }
             />
@@ -399,15 +410,15 @@ function KiosksPanel() {
                       {token.name}
                       {token.revokedAt ? (
                         <span className="ms-2 text-xs font-normal text-muted-foreground">
-                          revoked
+                          {t("revoked")}
                         </span>
                       ) : null}
                     </p>
                     <p className="font-mono text-2xs text-muted-foreground">
                       {token.tokenPrefix}…{" "}
                       {token.lastUsedAt
-                        ? `· last used ${new Date(token.lastUsedAt).toLocaleDateString("en-GB")}`
-                        : "· never used"}
+                        ? `· ${t("lastUsed", { date: fmtDate(token.lastUsedAt, { locale }) })}`
+                        : `· ${t("neverUsed")}`}
                     </p>
                   </div>
 
@@ -416,16 +427,16 @@ function KiosksPanel() {
                       <Button
                         variant="destructive-ghost"
                         size="icon-sm"
-                        aria-label={`Revoke ${token.name}`}
+                        aria-label={t("revokeKiosk", { name: token.name })}
                         onClick={async () => {
                           try {
                             await revokeToken({ tokenId: token.id }).unwrap();
-                            toast.success("Kiosk revoked.");
+                            toast.success(t("kioskRevoked"));
                           } catch (error) {
                             toast.error(
                               apiErrorCode(error) === "DEMO_RESTRICTED"
                                 ? apiErrorMessage(error)
-                                : apiErrorMessage(error, "Could not revoke the kiosk."),
+                                : apiErrorMessage(error, t("kioskRevokeFailed")),
                             );
                           }
                         }}
@@ -453,18 +464,18 @@ function KiosksPanel() {
       >
         <SheetContent side="right" className="w-full sm:max-w-md">
           <SheetHeader className="border-b border-border">
-            <SheetTitle>Pair a device</SheetTitle>
+            <SheetTitle>{t("pairDeviceTitle")}</SheetTitle>
             <SheetDescription>
-              The token is shown once. Paste it into the kiosk screen on that device.
+              {t("pairDeviceHint")}
             </SheetDescription>
           </SheetHeader>
 
           <div className="space-y-4 px-4 py-5">
             <div className="space-y-1.5">
-              <Label htmlFor="kiosk-name">Device name</Label>
+              <Label htmlFor="kiosk-name">{t("deviceName")}</Label>
               <Input
                 id="kiosk-name"
-                placeholder="Front door iPad"
+                placeholder={t("deviceNamePlaceholder")}
                 value={name}
                 onChange={(event) => setName(event.target.value)}
               />
@@ -473,7 +484,7 @@ function KiosksPanel() {
             {freshToken ? (
               <div className="space-y-2 rounded-md border border-primary/40 bg-brand-subtle p-3">
                 <p className="text-xs text-muted-foreground">
-                  Copy this now — it is never shown again.
+                  {t("copyNow")}
                 </p>
                 <div className="flex items-center gap-2">
                   <code className="min-w-0 flex-1 truncate rounded bg-background px-2 py-1.5 font-mono text-xs">
@@ -482,7 +493,7 @@ function KiosksPanel() {
                   <Button
                     size="icon-sm"
                     variant="ghost"
-                    aria-label="Copy token"
+                    aria-label={t("copyToken")}
                     onClick={() => {
                       void navigator.clipboard.writeText(freshToken);
                       setCopied(true);
@@ -498,7 +509,7 @@ function KiosksPanel() {
 
           <SheetFooter className="border-t border-border sm:flex-row sm:justify-end">
             <Button variant="ghost" onClick={() => setPairOpen(false)}>
-              {freshToken ? "Done" : "Cancel"}
+              {freshToken ? tCommon("close") : tCommon("cancel")}
             </Button>
             {!freshToken ? (
               <Button
@@ -507,14 +518,14 @@ function KiosksPanel() {
                   try {
                     const result = await createToken({ name }).unwrap();
                     setFreshToken(result.plaintext);
-                    toast.success("Kiosk paired — copy the token now.");
+                    toast.success(t("kioskPaired"));
                   } catch (error) {
-                    toast.error(apiErrorMessage(error, "Could not pair the device."));
+                    toast.error(apiErrorMessage(error, t("kioskPairFailed")));
                   }
                 }}
               >
                 {isCreating ? <Loader2 className="animate-spin" /> : <Plus />}
-                Pair kiosk
+                {t("pairDevice")}
               </Button>
             ) : null}
           </SheetFooter>
@@ -525,6 +536,8 @@ function KiosksPanel() {
 }
 
 function TeamPanel() {
+  const t = useTranslations("settings");
+  const tCommon = useTranslations("common");
   const { data: staff = [], isLoading, isError, refetch } = useListStaffQuery();
   const [invite, { isLoading: isInviting }] = useInviteStaffMutation();
 
@@ -535,13 +548,13 @@ function TeamPanel() {
     <>
       <Card className="overflow-hidden py-0">
         <CardHeader className="border-b py-4">
-          <CardTitle>Team</CardTitle>
+          <CardTitle>{t("teamTitle")}</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Roles decide what each person can reach.
+            {t("teamHint")}
           </p>
           <CardAction>
             <Button size="sm" onClick={() => setOpen(true)}>
-              <UserPlus /> Add member
+              <UserPlus /> {t("addTeamMember")}
             </Button>
           </CardAction>
         </CardHeader>
@@ -563,7 +576,7 @@ function TeamPanel() {
                     <p className="truncate text-xs text-muted-foreground">{member.email}</p>
                   </div>
                   {member.isDemo ? (
-                    <span className="text-2xs text-muted-foreground uppercase">demo</span>
+                    <span className="text-2xs text-muted-foreground uppercase">{tCommon("yes")}</span>
                   ) : null}
                   <RoleBadge role={member.role} />
                 </li>
@@ -576,8 +589,8 @@ function TeamPanel() {
       <Sheet open={isOpen} onOpenChange={setOpen}>
         <SheetContent side="right" className="w-full sm:max-w-md">
           <SheetHeader className="border-b border-border">
-            <SheetTitle>Add a team member</SheetTitle>
-            <SheetDescription>They can sign in as soon as you save.</SheetDescription>
+            <SheetTitle>{t("addTeamMemberTitle")}</SheetTitle>
+            <SheetDescription>{t("addTeamMemberHint")}</SheetDescription>
           </SheetHeader>
 
           <form
@@ -586,17 +599,17 @@ function TeamPanel() {
               event.preventDefault();
               try {
                 await invite(form).unwrap();
-                toast.success(`${form.name} can now sign in.`);
+                toast.success(t("teamMemberAdded", { name: form.name }));
                 setForm({ name: "", email: "", role: "staff", password: "" });
                 setOpen(false);
               } catch (error) {
-                toast.error(apiErrorMessage(error, "Could not add the team member."));
+                toast.error(apiErrorMessage(error, t("teamMemberFailed")));
               }
             }}
           >
             <div className="flex-1 space-y-4 px-4 py-5">
               <div className="space-y-1.5">
-                <Label htmlFor="staff-name">Name</Label>
+                <Label htmlFor="staff-name">{t("name")}</Label>
                 <Input
                   id="staff-name"
                   required
@@ -606,7 +619,7 @@ function TeamPanel() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="staff-email">Email</Label>
+                <Label htmlFor="staff-email">{t("email")}</Label>
                 <Input
                   id="staff-email"
                   type="email"
@@ -617,7 +630,7 @@ function TeamPanel() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="staff-role">Role</Label>
+                <Label htmlFor="staff-role">{t("role")}</Label>
                 <Select
                   value={form.role}
                   onValueChange={(value) => setForm({ ...form, role: value })}
@@ -626,15 +639,15 @@ function TeamPanel() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="admin">Admin — everything</SelectItem>
-                    <SelectItem value="staff">Staff — desk and members</SelectItem>
-                    <SelectItem value="trainer">Trainer — own sessions</SelectItem>
+                    <SelectItem value="admin">{t("roleAdmin")}</SelectItem>
+                    <SelectItem value="staff">{t("roleStaff")}</SelectItem>
+                    <SelectItem value="trainer">{t("roleTrainer")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="staff-password">Temporary password</Label>
+                <Label htmlFor="staff-password">{t("tempPassword")}</Label>
                 <Input
                   id="staff-password"
                   type="password"
@@ -643,17 +656,17 @@ function TeamPanel() {
                   value={form.password}
                   onChange={(event) => setForm({ ...form, password: event.target.value })}
                 />
-                <p className="text-xs text-muted-foreground">At least 8 characters.</p>
+                <p className="text-xs text-muted-foreground">{t("passwordHint")}</p>
               </div>
             </div>
 
             <SheetFooter className="border-t border-border sm:flex-row sm:justify-end">
               <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-                Cancel
+                {tCommon("cancel")}
               </Button>
               <Button type="submit" disabled={isInviting}>
                 {isInviting ? <Loader2 className="animate-spin" /> : <UserPlus />}
-                Add member
+                {t("addTeamMember")}
               </Button>
             </SheetFooter>
           </form>
@@ -663,6 +676,3 @@ function TeamPanel() {
   );
 }
 
-function formatMoney(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
-}

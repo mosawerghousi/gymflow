@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import {
   AlertTriangle,
   CalendarPlus,
@@ -16,6 +16,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { Link } from "@/i18n/routing";
+import { MemberCode } from "@/presentation/components/i18n/bidi";
+import { formatCount } from "@/presentation/lib/format";
 import { MemberAvatar } from "@/presentation/components/shared/member-avatar";
 import { EmptyState, ListSkeleton } from "@/presentation/components/shared/states";
 import { MembershipStatus, StatusDot } from "@/presentation/components/shared/status-badge";
@@ -59,6 +62,10 @@ const SWEEP_MS = 1400;
  * — because this is the interaction a desk performs hundreds of times a day.
  */
 export function CheckInDesk() {
+  const t = useTranslations("checkin");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
+  const ctx = { locale };
   const dispatch = useAppDispatch();
   const { query, highlightedIndex, lastResult, lastError, feed } = useAppSelector(
     (state) => state.checkin,
@@ -91,9 +98,9 @@ export function CheckInDesk() {
       setTimeout(() => setSweptId(null), SWEEP_MS);
 
       if (result.outcome === "already_inside") {
-        toast.info(`${result.member.fullName} is already checked in.`);
+        toast.info(t("alreadyInsideToast", { name: result.member.fullName }));
       } else {
-        toast.success(`${result.member.fullName} checked in.`);
+        toast.success(t("checkedInToast", { name: result.member.fullName }));
       }
 
       inputRef.current?.focus();
@@ -102,7 +109,7 @@ export function CheckInDesk() {
 
       dispatch(
         checkInFailed({
-          message: apiErrorMessage(error, "Check-in failed."),
+          message: apiErrorMessage(error, t("checkInFailed")),
           memberName: typeof details?.memberName === "string" ? details.memberName : undefined,
           memberCode: typeof details?.memberCode === "string" ? details.memberCode : undefined,
         }),
@@ -121,7 +128,7 @@ export function CheckInDesk() {
       event.preventDefault();
       const target = results[safeIndex];
       if (target?.canCheckIn) void performCheckIn(target.id);
-      else if (target) toast.error(target.blockedReason ?? "This member cannot check in.");
+      else if (target) toast.error(target.blockedReason ?? t("cannotCheckIn"));
     } else if (event.key === "Escape") {
       dispatch(deskCleared());
     }
@@ -139,8 +146,8 @@ export function CheckInDesk() {
             value={query}
             onChange={(event) => dispatch(deskQueryChanged(event.target.value))}
             onKeyDown={onKeyDown}
-            placeholder="Search by name, member code, email or phone…"
-            aria-label="Search members to check in"
+            placeholder={t("searchPlaceholder")}
+            aria-label={t("searchLabel")}
             className="h-16 rounded-xl ps-14 text-base md:text-base"
           />
           {isFetching ? (
@@ -150,7 +157,7 @@ export function CheckInDesk() {
             <Button
               variant="ghost"
               size="icon"
-              aria-label="Clear search"
+              aria-label={t("clearSearch")}
               className="absolute top-1/2 end-3 -translate-y-1/2"
               onClick={() => {
                 dispatch(deskCleared());
@@ -165,16 +172,16 @@ export function CheckInDesk() {
         <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1">
             <Key>↑</Key>
-            <Key>↓</Key> move
+            <Key>↓</Key> {t("hintMove")}
           </span>
           <span className="inline-flex items-center gap-1">
             <Key>
               <CornerDownLeft className="size-2.5" />
             </Key>
-            check in
+            {t("hintCheckIn")}
           </span>
           <span className="inline-flex items-center gap-1">
-            <Key>Esc</Key> clear
+            <Key>Esc</Key> {t("hintClear")}
           </span>
         </p>
 
@@ -186,12 +193,12 @@ export function CheckInDesk() {
           >
             <AlertTriangle className="mt-0.5 size-5 shrink-0 text-danger" />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-danger">Entry blocked</p>
+              <p className="text-sm font-medium text-danger">{t("entryBlocked")}</p>
               <p className="mt-0.5 text-sm text-foreground">{lastError.message}</p>
             </div>
             <Button asChild size="sm" variant="secondary" className="shrink-0">
               <Link href="/members">
-                <CalendarPlus /> Renew
+                <CalendarPlus /> {tCommon("open")}
               </Link>
             </Button>
           </div>
@@ -210,11 +217,11 @@ export function CheckInDesk() {
             <div className="min-w-0 flex-1">
               <p className="text-base font-semibold">
                 {lastResult.outcome === "already_inside"
-                  ? `${lastResult.member.fullName} is already inside`
-                  : `${lastResult.member.fullName} is in`}
+                  ? t("alreadyInside", { name: lastResult.member.fullName })
+                  : t("isIn", { name: lastResult.member.fullName })}
               </p>
               <p className="mt-0.5 truncate text-sm text-muted-foreground">
-                <span className="font-mono">{lastResult.member.code}</span>
+                <MemberCode code={lastResult.member.code} />
                 {lastResult.member.planName ? ` · ${lastResult.member.planName}` : ""}
                 {lastResult.warnings.length > 0 ? ` · ${lastResult.warnings.join(" ")}` : ""}
               </p>
@@ -235,8 +242,8 @@ export function CheckInDesk() {
               <CardContent className="px-0">
                 <EmptyState
                   icon={Search}
-                  title={`Nothing matches “${debouncedQuery}”`}
-                  description="Try a partial name, or the member code from their card."
+                  title={t("noMatch", { query: debouncedQuery })}
+                  description={t("noMatchHint")}
                 />
               </CardContent>
             </Card>
@@ -252,7 +259,7 @@ export function CheckInDesk() {
                     onClick={() =>
                       member.canCheckIn
                         ? void performCheckIn(member.id)
-                        : toast.error(member.blockedReason ?? "Cannot check in.")
+                        : toast.error(member.blockedReason ?? t("cannotCheckIn"))
                     }
                     disabled={isCheckingIn}
                     className={cn(
@@ -272,13 +279,13 @@ export function CheckInDesk() {
                         <span className="truncate text-base font-medium">{member.fullName}</span>
                         {member.isInsideNow ? (
                           <span className="inline-flex items-center gap-1 text-xs text-primary">
-                            <StatusDot tone="success" /> inside
+                            <StatusDot tone="success" /> {t("inside")}
                           </span>
                         ) : null}
                       </span>
 
                       <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
-                        <span className="font-mono">{member.code}</span>
+                        <MemberCode code={member.code} />
                         <span aria-hidden>·</span>
                         <MembershipStatus status={member.status} className="text-xs" />
                         {member.planName ? (
@@ -316,8 +323,8 @@ export function CheckInDesk() {
             <CardContent className="px-0">
               <EmptyState
                 icon={UserRound}
-                title="Ready when you are"
-                description="Start typing a name or member code. The first result checks in with Enter."
+                title={t("ready")}
+                description={t("readyHint")}
               />
             </CardContent>
           </Card>
@@ -329,11 +336,11 @@ export function CheckInDesk() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <StatusDot tone="success" pulse /> In the gym
+              <StatusDot tone="success" pulse /> {t("inTheGym")}
             </CardTitle>
             <CardAction>
               <span data-numeric className="text-base font-semibold text-primary">
-                {inGym?.count ?? 0}
+                {formatCount(inGym?.count ?? 0, ctx)}
               </span>
             </CardAction>
           </CardHeader>
@@ -341,7 +348,7 @@ export function CheckInDesk() {
             {isRosterLoading ? (
               <ListSkeleton rows={4} />
             ) : !inGym || inGym.visitors.length === 0 ? (
-              <EmptyState compact title="Nobody is inside" />
+              <EmptyState compact title={t("nobodyInside")} />
             ) : (
               <ul className="divide-y divide-border">
                 {inGym.visitors.map((visitor) => (
@@ -359,20 +366,20 @@ export function CheckInDesk() {
                         className="flex items-center gap-1 text-xs text-muted-foreground"
                       >
                         <Clock className="size-3" />
-                        {visitor.minutesInside}m
+                        {tCommon("minutesShort", { count: formatCount(visitor.minutesInside, ctx) })}
                       </p>
                     </div>
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      aria-label={`Check out ${visitor.fullName}`}
+                      aria-label={t("checkOut", { name: visitor.fullName })}
                       className="opacity-0 transition-opacity group-hover/row:opacity-100 group-focus-within/row:opacity-100"
                       onClick={async () => {
                         try {
                           await checkOut({ checkinId: visitor.checkinId }).unwrap();
-                          toast.success(`${visitor.fullName} checked out.`);
+                          toast.success(t("checkedOutToast", { name: visitor.fullName }));
                         } catch (error) {
-                          toast.error(apiErrorMessage(error, "Check-out failed."));
+                          toast.error(apiErrorMessage(error, t("checkOutFailed")));
                         }
                       }}
                     >
@@ -387,11 +394,11 @@ export function CheckInDesk() {
 
         <Card>
           <CardHeader>
-            <CardTitle>This session</CardTitle>
+            <CardTitle>{t("thisSession")}</CardTitle>
           </CardHeader>
           <CardContent>
             {feed.length === 0 ? (
-              <EmptyState compact title="Nothing yet" description="Check-ins appear here." />
+              <EmptyState compact title={t("nothingYet")} description={t("nothingYetHint")} />
             ) : (
               <ul className="space-y-2.5">
                 {feed.map((event) => (

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -61,6 +62,8 @@ export function MemberForm({
   defaultValues,
   onSuccess,
 }: MemberFormProps) {
+  const t = useTranslations("forms");
+  const tCommonSave = useTranslations("common")("save");
   const { data: plans = [] } = useListPlansQuery();
   const [createMember] = useCreateMemberMutation();
   const [updateMember] = useUpdateMemberMutation();
@@ -70,40 +73,40 @@ export function MemberForm({
       ? [
           {
             name: "memberCode" as const,
-            label: "Member code",
-            section: "Identity",
+            label: t("memberCode"),
+            section: t("sectionIdentity"),
             readOnlyInEdit: true,
-            hint: "Assigned on sign-up and never reused.",
+            hint: t("memberCodeHint"),
           },
         ]
       : []),
-    { name: "firstName", label: "First name", section: "Identity", required: true, half: true, maxLength: 80 },
-    { name: "lastName", label: "Last name", section: "Identity", required: true, half: true, maxLength: 80 },
+    { name: "firstName", label: t("firstName"), section: t("sectionIdentity"), required: true, half: true, maxLength: 80 },
+    { name: "lastName", label: t("lastName"), section: t("sectionIdentity"), required: true, half: true, maxLength: 80 },
 
     {
       name: "email",
-      label: "Email",
-      section: "Contact",
+      label: t("email"),
+      section: t("sectionContact"),
       kind: "email",
-      placeholder: "name@example.com",
-      hint: "Used for renewal reminders.",
+      placeholder: t("emailPlaceholder"),
+      hint: t("emailHint"),
     },
-    { name: "phone", label: "Phone", section: "Contact", kind: "tel", placeholder: "+1 555 0100" },
+    { name: "phone", label: t("phone"), section: t("sectionContact"), kind: "tel", placeholder: t("phonePlaceholder") },
 
     ...(mode === "create"
       ? [
           {
             name: "planId" as const,
-            label: "Starting plan",
-            section: "Membership",
+            label: t("startingPlan"),
+            section: t("sectionMembership"),
             kind: "select" as const,
-            placeholder: "No plan yet",
-            hint: "Choosing a plan starts their term today. You can also do this later.",
+            placeholder: t("noPlanYet"),
+            hint: t("startingPlanHint"),
             options: plans
               .filter((plan) => plan.isActive)
               .map((plan) => ({
                 value: plan.id,
-                label: `${plan.name} — ${plan.durationDays} days`,
+                label: t("planOption", { name: plan.name, days: plan.durationDays }),
               })),
           },
         ]
@@ -111,23 +114,23 @@ export function MemberForm({
 
     {
       name: "notes",
-      label: "Notes",
-      section: "Notes",
+      label: t("notes"),
+      section: t("sectionNotes"),
       kind: "textarea",
       rows: 4,
       maxLength: 2000,
-      placeholder: "Anything the desk should know — injuries, preferences, access needs.",
+      placeholder: t("notesPlaceholder"),
     },
   ];
 
   return (
     <EntityForm
       mode={mode}
-      entityLabel="member"
+      entityLabel="entityMember"
       description={
         mode === "create"
-          ? "A member code is assigned automatically."
-          : "Membership actions live on the profile — this is contact detail only."
+          ? t("memberDescriptionCreate")
+          : t("memberDescriptionEdit")
       }
       schema={memberFormSchema}
       fields={fields}
@@ -155,7 +158,7 @@ export function MemberForm({
           </div>
         ) : null
       }
-      submitLabel={{ create: "Create member", edit: "Save changes" }}
+      submitLabel={{ create: t("createMember"), edit: tCommonSave }}
       onSubmit={async (values) => {
         try {
           const payload = {
@@ -182,13 +185,13 @@ export function MemberForm({
 
           toast.success(
             mode === "create"
-              ? `${member.fullName} added as ${member.code}.`
-              : `${member.fullName} updated.`,
+              ? t("memberCreated", { name: member.fullName, code: member.code })
+              : t("memberUpdated", { name: member.fullName }),
           );
 
           onSuccess?.(member);
         } catch (error) {
-          toast.error(apiErrorMessage(error, "Could not save the member."));
+          toast.error(apiErrorMessage(error, t("memberSaveFailed")));
           throw error;
         }
       }}
