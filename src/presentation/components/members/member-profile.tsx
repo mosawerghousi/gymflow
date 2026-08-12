@@ -88,6 +88,7 @@ export function MemberProfile({
 }) {
   const t = useTranslations("members");
   const tCommon = useTranslations("common");
+  const tCharts = useTranslations("charts");
   const locale = useLocale();
   const ctx = { locale };
   const { data, isLoading, isError, refetch } = useGetMemberQuery(memberId);
@@ -329,7 +330,7 @@ export function MemberProfile({
                         <Area
                           type="monotone"
                           dataKey="count"
-                          name="Visits"
+                          name={tCharts("visits")}
                           stroke="var(--color-primary)"
                           strokeWidth={2}
                           fill="url(#attendanceFill)"

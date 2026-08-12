@@ -124,7 +124,12 @@
     "date": "تاریخ",
     "checkins": "حضوری‌ها",
     "total": "مجموع",
-    "checkinsPerDay": "حضوری‌های روزانه در {days} روز گذشته"
+    "checkinsPerDay": "حضوری‌های روزانه در {days} روز گذشته",
+    "signups": "ثبت‌نام‌ها",
+    "cancellations": "لغوها",
+    "scheduled": "برنامه‌ریزی‌شده",
+    "completed": "تکمیل‌شده",
+    "visits": "مراجعات"
   },
   "commandPalette": {
     "title": "پنل فرمان",
@@ -628,7 +633,20 @@
     "errorDuration": "مدت را وارد کنید.",
     "errorDurationWhole": "از روزهای کامل استفاده کنید.",
     "errorDurationMin": "یک پلان حداقل یک روز است.",
-    "errorTooLong": "{field} بسیار طولانی است."
+    "errorTooLong": "{field} بسیار طولانی است.",
+    "validation": {
+      "firstNameRequired": "نام الزامی است.",
+      "lastNameRequired": "تخلص الزامی است.",
+      "emailInvalid": "یک ایمیل معتبر وارد کنید.",
+      "planNameRequired": "برای پلان یک نام بدهید.",
+      "priceNegative": "قیمت نمی‌تواند منفی باشد.",
+      "priceTooHigh": "این از حد مجاز سیستم بالاتر است.",
+      "chooseTrainer": "یک مربی انتخاب کنید.",
+      "chooseMember": "یک عضو انتخاب کنید.",
+      "chooseWorker": "انتخاب کنید چه کسی کار می‌کند.",
+      "pickDate": "یک تاریخ انتخاب کنید.",
+      "timeFormat": "قالب HH:mm را به کار ببرید."
+    }
   },
   "states": {
     "errorTitle": "بارگذاری نشد",

@@ -102,6 +102,7 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
   const t = useTranslations("reports");
   const tCommon = useTranslations("common");
   const tDays = useTranslations("weekdays");
+  const tCharts = useTranslations("charts");
   const locale = useLocale();
   const ctx = { locale };
   const dispatch = useAppDispatch();
@@ -294,7 +295,7 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
                             <Area
                               type="monotone"
                               dataKey="count"
-                              name="Check-ins"
+                              name={tCharts("checkins")}
                               stroke="var(--color-primary)"
                               strokeWidth={2}
                               fill="url(#checkinFill)"
@@ -349,7 +350,7 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
                           <Tooltip contentStyle={CHART_TOOLTIP} cursor={{ fill: "var(--color-surface-2)" }} />
                           <Bar
                             dataKey="count"
-                            name="Check-ins"
+                            name={tCharts("checkins")}
                             fill="var(--color-primary)"
                             radius={[3, 3, 0, 0]}
                           />
@@ -425,7 +426,7 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
                           <Line
                             type="monotone"
                             dataKey="signups"
-                            name="Sign-ups"
+                            name={tCharts("signups")}
                             stroke="var(--color-primary)"
                             strokeWidth={2}
                             dot={false}
@@ -434,7 +435,7 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
                           <Line
                             type="monotone"
                             dataKey="cancellations"
-                            name="Cancellations"
+                            name={tCharts("cancellations")}
                             stroke="var(--color-danger)"
                             strokeWidth={2}
                             dot={false}
@@ -630,13 +631,13 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
                           <Tooltip contentStyle={CHART_TOOLTIP} cursor={{ fill: "var(--color-surface-2)" }} />
                           <Bar
                             dataKey="scheduledHours"
-                            name="Scheduled"
+                            name={tCharts("scheduled")}
                             fill="var(--color-chart-2)"
                             radius={[0, 3, 3, 0]}
                           />
                           <Bar
                             dataKey="completedHours"
-                            name="Completed"
+                            name={tCharts("completed")}
                             fill="var(--color-primary)"
                             radius={[0, 3, 3, 0]}
                           />

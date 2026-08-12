@@ -19,10 +19,10 @@ import {
 } from "@/presentation/store/api/schedule-api";
 
 export const sessionFormSchema = z.object({
-  trainerId: z.string().uuid("Choose a trainer."),
-  memberId: z.string().uuid("Choose a member."),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Pick a date."),
-  startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Use HH:mm."),
+  trainerId: z.string().uuid("chooseTrainer"),
+  memberId: z.string().uuid("chooseMember"),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "pickDate"),
+  startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "timeFormat"),
   durationMinutes: z.coerce.number().int().min(15).max(180),
   notes: z.string().trim().max(500).optional(),
 });

@@ -18,7 +18,7 @@ export function GymFlowIcon({
       viewBox="0 0 64 64"
       className={cn("size-8", className)}
       role="img"
-      aria-label="GymFlow"
+      aria-label="GymFlow" // i18n-ignore — the brand name
       fill="none"
     >
       <defs>
@@ -62,7 +62,7 @@ export function GymFlowLogo({
           wordmarkClassName,
         )}
       >
-        Gym<span className="text-primary">Flow</span>
+        Gym<span className="text-primary">Flow</span> {/* i18n-ignore — brand wordmark */}
       </span>
     </span>
   );

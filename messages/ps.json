@@ -124,7 +124,12 @@
     "date": "نېټه",
     "checkins": "حاضرۍ",
     "total": "ټولټال",
-    "checkinsPerDay": "د تېرو {days} ورځو ورځنۍ حاضرۍ"
+    "checkinsPerDay": "د تېرو {days} ورځو ورځنۍ حاضرۍ",
+    "signups": "نوم لیکنې",
+    "cancellations": "لغوې شوې",
+    "scheduled": "مهال ویش شوی",
+    "completed": "بشپړ شوی",
+    "visits": "لیدنې"
   },
   "commandPalette": {
     "title": "د کمانډ پنل",
@@ -628,7 +633,20 @@
     "errorDuration": "موده ولیکئ.",
     "errorDurationWhole": "بشپړې ورځې وکاروئ.",
     "errorDurationMin": "یو پلان لږ تر لږه یوه ورځ دی.",
-    "errorTooLong": "{field} ډېر اوږد دی."
+    "errorTooLong": "{field} ډېر اوږد دی.",
+    "validation": {
+      "firstNameRequired": "نوم اړین دی.",
+      "lastNameRequired": "تخلص اړین دی.",
+      "emailInvalid": "سم بریښنالیک ولیکئ.",
+      "planNameRequired": "پلان ته یو نوم ورکړئ.",
+      "priceNegative": "بیه منفي کېدای نشي.",
+      "priceTooHigh": "دا د سیسټم له بریده لوړه ده.",
+      "chooseTrainer": "یو روزونکی وټاکئ.",
+      "chooseMember": "یو غړی وټاکئ.",
+      "chooseWorker": "وټاکئ چې څوک کار کوي.",
+      "pickDate": "یوه نېټه وټاکئ.",
+      "timeFormat": "د HH:mm بڼه وکاروئ."
+    }
   },
   "states": {
     "errorTitle": "بار نشو",

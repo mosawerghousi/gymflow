@@ -1,6 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
+
+import { Link } from "@/i18n/routing";
 import { ArrowUpRight, Clock } from "lucide-react";
 
 import type { CurrentlyInGymDto } from "@/application/dto/checkin.dto";
@@ -8,6 +10,7 @@ import { MemberAvatar } from "@/presentation/components/shared/member-avatar";
 import { StatusDot } from "@/presentation/components/shared/status-badge";
 import { EmptyState, ListSkeleton } from "@/presentation/components/shared/states";
 import { Card, CardContent } from "@/presentation/components/ui/card";
+import { formatCount } from "@/presentation/lib/format";
 import { useCurrentlyInGymQuery } from "@/presentation/store/api/checkins-api";
 
 /**
@@ -18,6 +21,9 @@ import { useCurrentlyInGymQuery } from "@/presentation/store/api/checkins-api";
  * only place the accent appears at that size.
  */
 export function HeroMetric({ initial }: { initial: CurrentlyInGymDto }) {
+  const t = useTranslations("dashboard");
+  const locale = useLocale();
+  const ctx = { locale };
   const { data = initial, isLoading } = useCurrentlyInGymQuery(undefined, {
     pollingInterval: 30_000,
   });
@@ -31,20 +37,18 @@ export function HeroMetric({ initial }: { initial: CurrentlyInGymDto }) {
           <div>
             <p className="flex items-center gap-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
               <StatusDot tone="success" pulse />
-              Currently in gym
+              {t("currentlyInGym")}
             </p>
 
             <p
               data-numeric
               className="mt-2 text-3xl leading-none font-semibold tracking-tight text-primary"
             >
-              {data.count}
+              {formatCount(data.count, ctx)}
             </p>
 
             <p className="mt-2 text-sm text-muted-foreground">
-              {data.count === 0
-                ? "Nobody has checked in yet."
-                : `${data.count === 1 ? "member is" : "members are"} training right now.`}
+              {data.count === 0 ? t("nobodyYet") : t("trainingNow", { count: data.count })}
             </p>
           </div>
 
@@ -52,7 +56,7 @@ export function HeroMetric({ initial }: { initial: CurrentlyInGymDto }) {
             href="/checkin"
             className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground"
           >
-            Desk <ArrowUpRight className="size-3.5" />
+            {t("desk")} <ArrowUpRight className="size-3.5" />
           </Link>
         </div>
 
@@ -61,8 +65,8 @@ export function HeroMetric({ initial }: { initial: CurrentlyInGymDto }) {
         ) : roster.length === 0 ? (
           <EmptyState
             compact
-            title="The floor is empty"
-            description="Check someone in and they will appear here."
+            title={t("floorEmpty")}
+            description={t("floorEmptyHint")}
           />
         ) : (
           <ul className="grid gap-x-6 gap-y-2 sm:grid-cols-2">

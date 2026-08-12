@@ -79,6 +79,21 @@ export interface EntityFormProps<Schema extends z.ZodTypeAny> {
   submitLabel?: { create: string; edit: string };
 }
 
+/**
+ * Zod schemas are built at module scope, where no translator exists, so their
+ * messages are catalogue keys rather than sentences. They are resolved here,
+ * the one place every field error passes through. A message that is not a key
+ * is shown as-is, which keeps third-party and coercion errors readable.
+ */
+function useIssueText() {
+  const t = useTranslations("forms.validation");
+
+  return useCallback(
+    (message: string) => (t.has(message) ? t(message) : message),
+    [t],
+  );
+}
+
 export function EntityForm<Schema extends z.ZodTypeAny>({
   mode,
   entityLabel,
@@ -99,6 +114,7 @@ export function EntityForm<Schema extends z.ZodTypeAny>({
 
   const [values, setValues] = useState<Record<string, string>>(initial);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const issueText = useIssueText();
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
   const [confirmingDiscard, setConfirmingDiscard] = useState(false);
@@ -147,13 +163,13 @@ export function EntityForm<Schema extends z.ZodTypeAny>({
         }
 
         const issue = result.error.issues.find((candidate) => candidate.path[0] === name);
-        if (issue) next[name] = issue.message;
+        if (issue) next[name] = issueText(issue.message);
         else delete next[name];
 
         return next;
       });
     },
-    [schema, values, fields],
+    [schema, values, fields, issueText],
   );
 
   const submit = useCallback(async () => {
@@ -163,7 +179,7 @@ export function EntityForm<Schema extends z.ZodTypeAny>({
       const collected: Record<string, string> = {};
       for (const issue of result.error.issues) {
         const key = String(issue.path[0] ?? "");
-        if (key && !collected[key]) collected[key] = issue.message;
+        if (key && !collected[key]) collected[key] = issueText(issue.message);
       }
 
       setErrors(collected);
@@ -187,7 +203,7 @@ export function EntityForm<Schema extends z.ZodTypeAny>({
     } finally {
       setSubmitting(false);
     }
-  }, [schema, values, fields, onSubmit, onOpenChange]);
+  }, [schema, values, fields, onSubmit, onOpenChange, issueText]);
 
   function requestClose(next: boolean) {
     if (!next && isDirty && !confirmingDiscard) {

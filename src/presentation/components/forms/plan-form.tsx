@@ -18,11 +18,11 @@ import {
 
 /** Price is entered in whole currency units and converted at the boundary. */
 export const planFormSchema = z.object({
-  name: z.string().trim().min(1, "Give the plan a name.").max(80),
+  name: z.string().trim().min(1, "planNameRequired").max(80),
   price: z.coerce
     .number({ invalid_type_error: "Enter a price." })
-    .min(0, "Price cannot be negative.")
-    .max(10_000, "That is higher than the app supports."),
+    .min(0, "priceNegative")
+    .max(10_000, "priceTooHigh"),
   durationDays: z.coerce
     .number({ invalid_type_error: "Enter a duration." })
     .int("Use whole days.")

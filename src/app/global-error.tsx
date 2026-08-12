@@ -29,7 +29,7 @@ export default function GlobalError({
       >
         <div style={{ maxWidth: "28rem" }}>
           <p style={{ fontSize: "1.25rem", fontWeight: 600, margin: "0 0 0.5rem" }}>
-            Gym<span style={{ color: "#34d399" }}>Flow</span> could not start
+            Gym<span style={{ color: "#34d399" }}>Flow</span> could not start {/* i18n-ignore — brand wordmark */}
           </p>
           <p style={{ fontSize: "0.875rem", color: "#94a3b8", margin: "0 0 1.5rem" }}>
             Something failed before the app could render.

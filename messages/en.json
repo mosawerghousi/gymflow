@@ -124,7 +124,12 @@
     "date": "Date",
     "checkins": "Check-ins",
     "total": "Total",
-    "checkinsPerDay": "Check-ins per day over the last {days} days"
+    "checkinsPerDay": "Check-ins per day over the last {days} days",
+    "signups": "Sign-ups",
+    "cancellations": "Cancellations",
+    "scheduled": "Scheduled",
+    "completed": "Completed",
+    "visits": "Visits"
   },
   "commandPalette": {
     "title": "Command palette",
@@ -628,7 +633,20 @@
     "errorDuration": "Enter a duration.",
     "errorDurationWhole": "Use whole days.",
     "errorDurationMin": "A plan lasts at least one day.",
-    "errorTooLong": "{field} is too long."
+    "errorTooLong": "{field} is too long.",
+    "validation": {
+      "firstNameRequired": "First name is required.",
+      "lastNameRequired": "Last name is required.",
+      "emailInvalid": "Enter a valid email address.",
+      "planNameRequired": "Give the plan a name.",
+      "priceNegative": "Price cannot be negative.",
+      "priceTooHigh": "That is higher than the app supports.",
+      "chooseTrainer": "Choose a trainer.",
+      "chooseMember": "Choose a member.",
+      "chooseWorker": "Choose who is working.",
+      "pickDate": "Pick a date.",
+      "timeFormat": "Use HH:mm."
+    }
   },
   "states": {
     "errorTitle": "That did not load",

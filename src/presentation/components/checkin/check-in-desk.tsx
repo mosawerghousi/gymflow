@@ -181,7 +181,7 @@ export function CheckInDesk() {
             {t("hintCheckIn")}
           </span>
           <span className="inline-flex items-center gap-1">
-            <Key>Esc</Key> {t("hintClear")}
+            <Key>Esc</Key> {t("hintClear")} {/* i18n-ignore — names a physical key */}
           </span>
         </p>
 
@@ -248,7 +248,7 @@ export function CheckInDesk() {
               </CardContent>
             </Card>
           ) : (
-            <ul className="space-y-2" role="listbox" aria-label="Matching members">
+            <ul className="space-y-2" role="listbox" aria-label={t("searchLabel")}>
               {results.map((member, index) => (
                 <li key={member.id}>
                   <button

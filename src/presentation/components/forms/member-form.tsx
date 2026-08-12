@@ -27,12 +27,12 @@ import {
  */
 export const memberFormSchema = z.object({
   memberCode: z.string().optional(),
-  firstName: z.string().trim().min(1, "First name is required.").max(80),
-  lastName: z.string().trim().min(1, "Last name is required.").max(80),
+  firstName: z.string().trim().min(1, "firstNameRequired").max(80),
+  lastName: z.string().trim().min(1, "lastNameRequired").max(80),
   email: z
     .string()
     .trim()
-    .email("Enter a valid email address.")
+    .email("emailInvalid")
     .max(160)
     .optional(),
   phone: z.string().trim().max(40).optional(),
