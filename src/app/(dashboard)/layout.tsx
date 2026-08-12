@@ -42,7 +42,10 @@ export default async function DashboardLayout({
 
           <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
             <AppTopbar user={navUser} />
-            <main className="min-w-0 flex-1 overflow-y-auto overscroll-contain">
+            {/* `relative` matters: the screen-reader tables behind each chart are
+                position:absolute, and without a positioned ancestor they resolve
+                against the document and grow it past the viewport. */}
+            <main className="relative min-w-0 flex-1 overflow-y-auto overscroll-contain">
               {children}
             </main>
           </div>
