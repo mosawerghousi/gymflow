@@ -1,7 +1,9 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 
+import { formatCount, formatDayMonth } from "@/presentation/lib/format";
 import { cn } from "@/presentation/lib/utils";
 
 /**
@@ -18,6 +20,9 @@ export function CheckinSparkline({
   data: Array<{ date: string; count: number }>;
   className?: string;
 }) {
+  const t = useTranslations("charts");
+  const locale = useLocale();
+  const ctx = { locale };
   const total = data.reduce((sum, point) => sum + point.count, 0);
 
   return (
@@ -35,7 +40,7 @@ export function CheckinSparkline({
             <XAxis dataKey="date" hide />
             <Tooltip
               cursor={{ stroke: "var(--color-border-strong)" }}
-              labelFormatter={(value: string) => formatDay(value)}
+              labelFormatter={(value: string) => formatDay(value, ctx)}
               contentStyle={{
                 background: "var(--color-popover)",
                 border: "1px solid var(--color-border)",
@@ -47,7 +52,7 @@ export function CheckinSparkline({
             <Area
               type="monotone"
               dataKey="count"
-              name="Check-ins"
+              name={t("checkins")}
               stroke="var(--color-primary)"
               strokeWidth={2}
               fill="url(#sparkFill)"
@@ -57,25 +62,25 @@ export function CheckinSparkline({
       </div>
 
       <table className="sr-only">
-        <caption>Check-ins per day over the last {data.length} days</caption>
+        <caption>{t("checkinsPerDay", { days: data.length })}</caption>
         <thead>
           <tr>
-            <th scope="col">Date</th>
-            <th scope="col">Check-ins</th>
+            <th scope="col">{t("date")}</th>
+            <th scope="col">{t("checkins")}</th>
           </tr>
         </thead>
         <tbody>
           {data.map((point) => (
             <tr key={point.date}>
-              <th scope="row">{point.date}</th>
-              <td>{point.count}</td>
+              <th scope="row">{formatDayMonth(point.date, ctx)}</th>
+              <td>{formatCount(point.count, ctx)}</td>
             </tr>
           ))}
         </tbody>
         <tfoot>
           <tr>
-            <th scope="row">Total</th>
-            <td>{total}</td>
+            <th scope="row">{t("total")}</th>
+            <td>{formatCount(total, ctx)}</td>
           </tr>
         </tfoot>
       </table>
@@ -83,11 +88,6 @@ export function CheckinSparkline({
   );
 }
 
-function formatDay(value: string): string {
-  return new Date(`${value}T00:00:00Z`).toLocaleDateString("en-GB", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    timeZone: "UTC",
-  });
+function formatDay(value: string, ctx: { locale: string }): string {
+  return formatDayMonth(value, ctx);
 }

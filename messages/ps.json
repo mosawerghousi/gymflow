@@ -4,7 +4,6 @@
     "description": "جیم‌فلو د ورزشي مرکزونو د مالکانو، د استقبالیې کارکوونکو او روزونکو لپاره یوه اپلیکېشن ده: غړي او حاضري، د کاري وارونو مهال ویش او راپورونه.",
     "ogDescription": "غړي، حاضري، مهال ویش او شننې د نننیو ورزشي مرکزونو لپاره."
   },
-
   "common": {
     "appName": "GymFlow",
     "save": "بدلونونه خوندي کړئ",
@@ -62,18 +61,15 @@
     "showingRange": "{from}–{to} له {total} څخه",
     "pageOf": "{page} / {pages}"
   },
-
   "language": {
     "label": "ژبه",
     "change": "ژبه بدله کړئ",
     "current": "اوسنۍ ژبه: {language}"
   },
-
   "theme": {
     "toDark": "تورې بڼې ته بدلون",
     "toLight": "روښانه بڼې ته بدلون"
   },
-
   "nav": {
     "dashboard": "ډشبورډ",
     "members": "غړي",
@@ -90,7 +86,6 @@
     "accountMenu": "د {name} د حساب مینو",
     "newTab": "نوې پاڼه"
   },
-
   "roles": {
     "admin": "مدیر",
     "staff": "استقبالیه",
@@ -100,7 +95,6 @@
     "trainerShort": "روزونکی",
     "demo": "ازمویښتي"
   },
-
   "status": {
     "active": "فعال",
     "frozen": "ځنډول شوی",
@@ -110,7 +104,6 @@
     "completed": "بشپړ شوی",
     "noShow": "نه راغلی"
   },
-
   "positions": {
     "front_desk": "استقبالیه",
     "floor": "د تمرین تالار",
@@ -118,7 +111,6 @@
     "cleaning": "پاکوالی",
     "management": "مدیریت"
   },
-
   "weekdays": {
     "sunday": "یکشنبه",
     "monday": "دوشنبه",
@@ -128,7 +120,12 @@
     "friday": "جمعه",
     "saturday": "شنبه"
   },
-
+  "charts": {
+    "date": "نېټه",
+    "checkins": "حاضرۍ",
+    "total": "ټولټال",
+    "checkinsPerDay": "د تېرو {days} ورځو ورځنۍ حاضرۍ"
+  },
   "commandPalette": {
     "title": "د کمانډ پنل",
     "description": "یوې پاڼې ته ولاړ شئ یا یو غړی ومومئ",
@@ -143,7 +140,6 @@
     "signedInAs": "د {name} · {role} په توګه ننوتلی",
     "trigger": "لټون…"
   },
-
   "auth": {
     "signInTitle": "جیم‌فلو ته ننوتل",
     "signInSubtitle": "د خپل کاري حساب په واسطه ننوځئ، یا ازمویښتي بڼه وګورئ.",
@@ -171,7 +167,6 @@
     "builtWith": "Next.js 15 · Redux Toolkit · Drizzle · Postgres",
     "openKiosk": "د کیوسک حالت پرانیستل"
   },
-
   "dashboard": {
     "greetingMorning": "سهار مو په خیر، {name}",
     "greetingAfternoon": "ورځ مو په خیر، {name}",
@@ -214,7 +209,6 @@
     "trendQuieter": "{total} راتګونه — له تېرې اونۍ {change}٪ لږ.",
     "trendNotEnough": "لا تر اوسه بس پېښلیک نشته."
   },
-
   "members": {
     "title": "غړي",
     "subtitle": "د ټولو ثبت شویو لټون، چاڼ او مدیریت.",
@@ -299,7 +293,6 @@
     "date": "نېټه",
     "visitsColumn": "راتګونه"
   },
-
   "checkin": {
     "title": "د حاضرۍ میز",
     "subtitle": "غړی ومومئ او حاضري یې ثبت کړئ. پای ته رسېدلي او ځنډول شوي غړیتوبونه له دلیل سره بندېږي.",
@@ -332,7 +325,6 @@
     "inside": "دننه",
     "cannotCheckIn": "حاضري نشي ثبتېدای."
   },
-
   "kiosk": {
     "pairTitle": "دا کیوسک وتړئ",
     "pairHint": "د وسیلې ټوکن له تنظیمات ← کیوسکونه څخه دلته ولګوئ. یوازې پر همدې وسیله ساتل کېږي.",
@@ -358,7 +350,6 @@
     "done": "بس",
     "failed": "ستاسو حاضري مو ثبت نه کړای شوه."
   },
-
   "schedule": {
     "title": "مهال ویش",
     "subtitle": "اوونیز مهال ویش، د روزونکو ناستې او د بدلون غوښتنې. پر یو بل ورتپل شوي کاري وارونه ردېږي.",
@@ -406,7 +397,6 @@
     "shiftDetail": "{start} – {end} · {position} · {hours} ساعته",
     "createShiftAt": "په {day} د {time} په ساعت کاري وار جوړول"
   },
-
   "reports": {
     "title": "راپورونه",
     "subtitle": "غړیتوب، ساتنه او راتګ‌راتلل — ټول ارقام په ډېټابیس کې محاسبه کېږي.",
@@ -475,7 +465,6 @@
     "seriesCaption": "ورځنی {label}",
     "date": "نېټه"
   },
-
   "settings": {
     "title": "تنظیمات",
     "subtitle": "پلانونه، د کار ساعتونه، د کیوسک وسیلې او ټیم.",
@@ -549,7 +538,6 @@
     "calendarPersian": "لمریز هجري",
     "calendarSaved": "د کليز غوره توب خوندي شو."
   },
-
   "forms": {
     "addEntity": "{entity} زیاتول",
     "editEntity": "د {entity} سمون",
@@ -563,14 +551,12 @@
     "bookSession": "ناسته نیول",
     "nothingToChoose": "لا تر اوسه د ټاکلو لپاره څه نشته.",
     "choose": "وټاکئ…",
-
     "sectionIdentity": "پېژندنه",
     "sectionContact": "اړیکه",
     "sectionMembership": "غړیتوب",
     "sectionNotes": "یادښتونه",
     "sectionWhen": "کله",
     "sectionDetails": "جزئیات",
-
     "memberDescriptionCreate": "د غړیتوب شمېره پخپله ورکول کېږي.",
     "memberDescriptionEdit": "د غړیتوب کړنې په پروفایل کې دي — دلته یوازې د اړیکې معلومات دي.",
     "memberCode": "د غړیتوب شمېره",
@@ -591,7 +577,6 @@
     "memberCreated": "{name} د {code} په شمېره زیات شو.",
     "memberUpdated": "{name} تازه شو.",
     "memberSaveFailed": "غړی خوندي نشو.",
-
     "planDescriptionCreate": "نوي پلانونه سمدستي په پلور کې ځي.",
     "planDescriptionEdit": "د پلان بدلول پر پخوانیو پلورل شویو دورو اغېز نه کوي.",
     "planName": "د پلان نوم",
@@ -604,7 +589,6 @@
     "planCreated": "پلان جوړ شو.",
     "planUpdated": "پلان تازه شو.",
     "planSaveFailed": "پلان خوندي نشو.",
-
     "shiftDescription": "د یوه تن پر یو بل ورتپل شوي کاري وارونه ردېږي.",
     "whoIsWorking": "څوک کار کوي",
     "pickStaff": "یو کارکوونکی وټاکئ",
@@ -615,7 +599,6 @@
     "shiftScheduled": "کاري وار وټاکل شو.",
     "shiftUpdated": "کاري وار تازه شو.",
     "shiftSaveFailed": "کاري وار خوندي نشو.",
-
     "sessionDescription": "یوه شېبه یوازې د روزونکي د کاري وار په منځ کې نیول کېدای شي.",
     "trainer": "روزونکی",
     "pickTrainer": "یو روزونکی وټاکئ",
@@ -630,7 +613,6 @@
     "sessionBooked": "ناسته ونیول شوه.",
     "sessionUpdated": "ناسته تازه شوه.",
     "sessionSaveFailed": "ناسته خوندي نشوه.",
-
     "errorRequired": "{field} اړین دی.",
     "errorEmail": "یو سم برېښنالیک ولیکئ.",
     "errorTime": "د ۲۴ ساعتیز HH:mm بڼه وکاروئ.",
@@ -648,7 +630,6 @@
     "errorDurationMin": "یو پلان لږ تر لږه یوه ورځ دی.",
     "errorTooLong": "{field} ډېر اوږد دی."
   },
-
   "states": {
     "errorTitle": "بار نشو",
     "errorBody": "زموږ په اړخ کې ستونزه راغله. یوه شېبه وروسته بیا هڅه وکړئ.",
@@ -659,7 +640,6 @@
     "appErrorBody": "پاڼه بار نشوه. دا معمولاً لنډمهاله وي — بیا هڅه وکړئ، او که تکرار شي کېدای شي ډېټابیس لاسرسي وړ نه وي.",
     "reference": "کوډ: {digest}"
   },
-
   "styleguide": {
     "title": "د ډیزاین لارښود",
     "subtitle": "ټول هغه توکن او اجزا چې اپلیکېشن ترې جوړ دی. که څه ناسم شي، لومړی به دلته ښکاره شي."

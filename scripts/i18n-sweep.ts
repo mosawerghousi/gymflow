@@ -30,8 +30,10 @@ async function main() {
     const page = await context.newPage();
 
     await page.goto(`${prefix}/login`);
-    // The first role button inside the demo card.
-    await page.locator("section >> button").first().click();
+    await page.waitForTimeout(800);
+    // The demo card's admin button — identified by the email it prints, which
+    // is the one string on that card that never localises.
+    await page.getByRole("button").filter({ hasText: /admin@gymflow.demo/ }).first().click();
     await page.waitForURL((url) => url.pathname.endsWith("/dashboard"), { timeout: 30_000 });
 
     for (const screen of SCREENS) {

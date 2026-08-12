@@ -1,21 +1,37 @@
 import type { Metadata } from "next";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { requireActor } from "@/composition/auth";
 import { PageHeader } from "@/presentation/components/layout/page-header";
 import { ScheduleScreen } from "@/presentation/components/schedule/schedule-screen";
 
-export const metadata: Metadata = { title: "Schedule" };
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "nav" });
+  return { title: t("schedule") };
+}
 export const dynamic = "force-dynamic";
 
-export default async function SchedulePage() {
+export default async function SchedulePage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations("schedule");
   const actor = await requireActor();
   actor.assertCan("shifts:read:own");
 
   return (
     <>
       <PageHeader
-        title="Schedule"
-        description="Weekly roster, trainer sessions and swap requests. Overlapping shifts are refused."
+        title={t("title")}
+        description={t("subtitle")}
       />
       <ScheduleScreen
         currentUserId={actor.id}

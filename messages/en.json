@@ -4,7 +4,6 @@
     "description": "GymFlow is a gym management app for owners, front-desk staff, and trainers: members and check-ins, staff scheduling, and reporting.",
     "ogDescription": "Members, check-ins, scheduling and analytics for modern gyms."
   },
-
   "common": {
     "appName": "GymFlow",
     "save": "Save changes",
@@ -62,18 +61,15 @@
     "showingRange": "{from}–{to} of {total}",
     "pageOf": "{page} / {pages}"
   },
-
   "language": {
     "label": "Language",
     "change": "Change language",
     "current": "Current language: {language}"
   },
-
   "theme": {
     "toDark": "Switch to dark theme",
     "toLight": "Switch to light theme"
   },
-
   "nav": {
     "dashboard": "Dashboard",
     "members": "Members",
@@ -90,7 +86,6 @@
     "accountMenu": "Account menu for {name}",
     "newTab": "new tab"
   },
-
   "roles": {
     "admin": "Admin",
     "staff": "Front desk",
@@ -100,7 +95,6 @@
     "trainerShort": "Trainer",
     "demo": "demo"
   },
-
   "status": {
     "active": "Active",
     "frozen": "Frozen",
@@ -110,7 +104,6 @@
     "completed": "Completed",
     "noShow": "No-show"
   },
-
   "positions": {
     "front_desk": "Front desk",
     "floor": "Gym floor",
@@ -118,7 +111,6 @@
     "cleaning": "Cleaning",
     "management": "Management"
   },
-
   "weekdays": {
     "sunday": "Sunday",
     "monday": "Monday",
@@ -128,7 +120,12 @@
     "friday": "Friday",
     "saturday": "Saturday"
   },
-
+  "charts": {
+    "date": "Date",
+    "checkins": "Check-ins",
+    "total": "Total",
+    "checkinsPerDay": "Check-ins per day over the last {days} days"
+  },
   "commandPalette": {
     "title": "Command palette",
     "description": "Jump to a screen or find a member",
@@ -143,7 +140,6 @@
     "signedInAs": "Signed in as {name} · {role}",
     "trigger": "Search…"
   },
-
   "auth": {
     "signInTitle": "Sign in to GymFlow",
     "signInSubtitle": "Use your staff account, or jump into the demo.",
@@ -171,7 +167,6 @@
     "builtWith": "Next.js 15 · Redux Toolkit · Drizzle · Postgres",
     "openKiosk": "Open kiosk mode"
   },
-
   "dashboard": {
     "greetingMorning": "Good morning, {name}",
     "greetingAfternoon": "Good afternoon, {name}",
@@ -214,7 +209,6 @@
     "trendQuieter": "{total} visits — {change}% quieter than the week before.",
     "trendNotEnough": "Not enough history yet."
   },
-
   "members": {
     "title": "Members",
     "subtitle": "Search, filter and manage everyone on the books.",
@@ -299,7 +293,6 @@
     "date": "Date",
     "visitsColumn": "Visits"
   },
-
   "checkin": {
     "title": "Check-in desk",
     "subtitle": "Find a member and check them in. Expired and frozen memberships are blocked with a reason.",
@@ -332,7 +325,6 @@
     "inside": "inside",
     "cannotCheckIn": "Cannot check in."
   },
-
   "kiosk": {
     "pairTitle": "Pair this kiosk",
     "pairHint": "Paste the device token from Settings → Kiosks. It is stored on this device only.",
@@ -358,7 +350,6 @@
     "done": "Done",
     "failed": "We could not check you in."
   },
-
   "schedule": {
     "title": "Schedule",
     "subtitle": "Weekly roster, trainer sessions and swap requests. Overlapping shifts are refused.",
@@ -406,7 +397,6 @@
     "shiftDetail": "{start} – {end} · {position} · {hours}h",
     "createShiftAt": "Create a shift on {day} at {time}"
   },
-
   "reports": {
     "title": "Reports",
     "subtitle": "Membership, retention and traffic — every figure aggregated in SQL.",
@@ -475,7 +465,6 @@
     "seriesCaption": "{label} per day",
     "date": "Date"
   },
-
   "settings": {
     "title": "Settings",
     "subtitle": "Plans, opening hours, kiosk devices and the team.",
@@ -549,7 +538,6 @@
     "calendarPersian": "Solar Hijri",
     "calendarSaved": "Calendar preference saved."
   },
-
   "forms": {
     "addEntity": "Add {entity}",
     "editEntity": "Edit {entity}",
@@ -563,14 +551,12 @@
     "bookSession": "Book session",
     "nothingToChoose": "Nothing to choose yet.",
     "choose": "Choose…",
-
     "sectionIdentity": "Identity",
     "sectionContact": "Contact",
     "sectionMembership": "Membership",
     "sectionNotes": "Notes",
     "sectionWhen": "When",
     "sectionDetails": "Details",
-
     "memberDescriptionCreate": "A member code is assigned automatically.",
     "memberDescriptionEdit": "Membership actions live on the profile — this is contact detail only.",
     "memberCode": "Member code",
@@ -591,7 +577,6 @@
     "memberCreated": "{name} added as {code}.",
     "memberUpdated": "{name} updated.",
     "memberSaveFailed": "Could not save the member.",
-
     "planDescriptionCreate": "New plans go on sale immediately.",
     "planDescriptionEdit": "Changing a plan does not alter terms already sold.",
     "planName": "Plan name",
@@ -604,7 +589,6 @@
     "planCreated": "Plan created.",
     "planUpdated": "Plan updated.",
     "planSaveFailed": "Could not save the plan.",
-
     "shiftDescription": "Overlapping shifts for the same person are refused.",
     "whoIsWorking": "Who is working",
     "pickStaff": "Pick a staff member",
@@ -615,7 +599,6 @@
     "shiftScheduled": "Shift scheduled.",
     "shiftUpdated": "Shift updated.",
     "shiftSaveFailed": "Could not save the shift.",
-
     "sessionDescription": "A slot is only bookable inside one of the trainer's shifts.",
     "trainer": "Trainer",
     "pickTrainer": "Pick a trainer",
@@ -630,7 +613,6 @@
     "sessionBooked": "Session booked.",
     "sessionUpdated": "Session updated.",
     "sessionSaveFailed": "Could not save the session.",
-
     "errorRequired": "{field} is required.",
     "errorEmail": "Enter a valid email address.",
     "errorTime": "Use the 24-hour HH:mm format.",
@@ -648,7 +630,6 @@
     "errorDurationMin": "A plan lasts at least one day.",
     "errorTooLong": "{field} is too long."
   },
-
   "states": {
     "errorTitle": "That did not load",
     "errorBody": "Something went wrong on our side. Try again in a moment.",
@@ -659,7 +640,6 @@
     "appErrorBody": "The screen could not load. This is usually temporary — try again, and if it keeps happening the database may be unreachable.",
     "reference": "Ref: {digest}"
   },
-
   "styleguide": {
     "title": "Style guide",
     "subtitle": "Every token and primitive the app is built from. If something drifts, it shows here first."

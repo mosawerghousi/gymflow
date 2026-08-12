@@ -4,7 +4,6 @@
     "description": "جیم‌فلو یک برنامهٔ مدیریت باشگاه برای مالکان، کارمندان پذیرش و مربیان است: اعضا و حاضری، تنظیم نوبت‌های کاری و گزارش‌گیری.",
     "ogDescription": "اعضا، حاضری، جدول کاری و تحلیل‌ها برای باشگاه‌های امروزی."
   },
-
   "common": {
     "appName": "GymFlow",
     "save": "ذخیرهٔ تغییرات",
@@ -62,18 +61,15 @@
     "showingRange": "{from}–{to} از {total}",
     "pageOf": "{page} / {pages}"
   },
-
   "language": {
     "label": "زبان",
     "change": "تغییر زبان",
     "current": "زبان فعلی: {language}"
   },
-
   "theme": {
     "toDark": "تغییر به حالت تاریک",
     "toLight": "تغییر به حالت روشن"
   },
-
   "nav": {
     "dashboard": "داشبورد",
     "members": "اعضا",
@@ -90,7 +86,6 @@
     "accountMenu": "منوی حساب {name}",
     "newTab": "برگهٔ جدید"
   },
-
   "roles": {
     "admin": "مدیر",
     "staff": "پذیرش",
@@ -100,7 +95,6 @@
     "trainerShort": "مربی",
     "demo": "نمایشی"
   },
-
   "status": {
     "active": "فعال",
     "frozen": "معلق",
@@ -110,7 +104,6 @@
     "completed": "تکمیل‌شده",
     "noShow": "غیرحاضر"
   },
-
   "positions": {
     "front_desk": "پذیرش",
     "floor": "سالن تمرین",
@@ -118,7 +111,6 @@
     "cleaning": "نظافت",
     "management": "مدیریت"
   },
-
   "weekdays": {
     "sunday": "یک‌شنبه",
     "monday": "دوشنبه",
@@ -128,7 +120,12 @@
     "friday": "جمعه",
     "saturday": "شنبه"
   },
-
+  "charts": {
+    "date": "تاریخ",
+    "checkins": "حضوری‌ها",
+    "total": "مجموع",
+    "checkinsPerDay": "حضوری‌های روزانه در {days} روز گذشته"
+  },
   "commandPalette": {
     "title": "پنل فرمان",
     "description": "به یک صفحه بروید یا عضوی را پیدا کنید",
@@ -143,7 +140,6 @@
     "signedInAs": "وارد شده به‌عنوان {name} · {role}",
     "trigger": "جست‌وجو…"
   },
-
   "auth": {
     "signInTitle": "ورود به جیم‌فلو",
     "signInSubtitle": "با حساب کاری خود وارد شوید، یا نسخهٔ نمایشی را امتحان کنید.",
@@ -171,7 +167,6 @@
     "builtWith": "Next.js 15 · Redux Toolkit · Drizzle · Postgres",
     "openKiosk": "باز کردن حالت کیوسک"
   },
-
   "dashboard": {
     "greetingMorning": "صبح بخیر، {name}",
     "greetingAfternoon": "روز بخیر، {name}",
@@ -214,7 +209,6 @@
     "trendQuieter": "{total} مراجعه — {change}٪ خلوت‌تر از هفتهٔ پیش.",
     "trendNotEnough": "هنوز سابقهٔ کافی وجود ندارد."
   },
-
   "members": {
     "title": "اعضا",
     "subtitle": "جست‌وجو، فلتر و مدیریت همهٔ ثبت‌شدگان.",
@@ -299,7 +293,6 @@
     "date": "تاریخ",
     "visitsColumn": "مراجعات"
   },
-
   "checkin": {
     "title": "میز حاضری",
     "subtitle": "عضو را پیدا کنید و حاضری او را ثبت کنید. عضویت‌های منقضی و معلق با ذکر دلیل مسدود می‌شوند.",
@@ -332,7 +325,6 @@
     "inside": "داخل",
     "cannotCheckIn": "ثبت حاضری ممکن نیست."
   },
-
   "kiosk": {
     "pairTitle": "اتصال این کیوسک",
     "pairHint": "توکن دستگاه را از تنظیمات ← کیوسک‌ها اینجا بگذارید. فقط روی همین دستگاه ذخیره می‌شود.",
@@ -358,7 +350,6 @@
     "done": "تمام",
     "failed": "نتوانستیم حاضری شما را ثبت کنیم."
   },
-
   "schedule": {
     "title": "جدول کاری",
     "subtitle": "جدول هفتگی، جلسات مربیان و درخواست‌های تبادله. نوبت‌های کاری متداخل رد می‌شوند.",
@@ -406,7 +397,6 @@
     "shiftDetail": "{start} – {end} · {position} · {hours} ساعت",
     "createShiftAt": "ایجاد نوبت کاری در {day} ساعت {time}"
   },
-
   "reports": {
     "title": "گزارش‌ها",
     "subtitle": "عضویت، نگهداشت و رفت‌وآمد — همهٔ ارقام در سطح دیتابیس محاسبه می‌شوند.",
@@ -475,7 +465,6 @@
     "seriesCaption": "{label} روزانه",
     "date": "تاریخ"
   },
-
   "settings": {
     "title": "تنظیمات",
     "subtitle": "پلان‌ها، ساعات کاری، دستگاه‌های کیوسک و تیم.",
@@ -549,7 +538,6 @@
     "calendarPersian": "هجری شمسی",
     "calendarSaved": "ترجیح تقویم ذخیره شد."
   },
-
   "forms": {
     "addEntity": "افزودن {entity}",
     "editEntity": "ویرایش {entity}",
@@ -563,14 +551,12 @@
     "bookSession": "رزرو جلسه",
     "nothingToChoose": "هنوز گزینه‌ای نیست.",
     "choose": "انتخاب کنید…",
-
     "sectionIdentity": "هویت",
     "sectionContact": "تماس",
     "sectionMembership": "عضویت",
     "sectionNotes": "یادداشت‌ها",
     "sectionWhen": "زمان",
     "sectionDetails": "جزئیات",
-
     "memberDescriptionCreate": "شمارهٔ عضویت به‌صورت خودکار داده می‌شود.",
     "memberDescriptionEdit": "اقدامات عضویت در پروفایل انجام می‌شود — اینجا تنها معلومات تماس است.",
     "memberCode": "شمارهٔ عضویت",
@@ -591,7 +577,6 @@
     "memberCreated": "{name} با شمارهٔ {code} اضافه شد.",
     "memberUpdated": "{name} به‌روزرسانی شد.",
     "memberSaveFailed": "عضو ذخیره نشد.",
-
     "planDescriptionCreate": "پلان‌های جدید بی‌درنگ در فروش قرار می‌گیرند.",
     "planDescriptionEdit": "تغییر پلان بر دوره‌های فروخته‌شده اثری ندارد.",
     "planName": "نام پلان",
@@ -604,7 +589,6 @@
     "planCreated": "پلان ایجاد شد.",
     "planUpdated": "پلان به‌روزرسانی شد.",
     "planSaveFailed": "پلان ذخیره نشد.",
-
     "shiftDescription": "نوبت‌های کاری متداخل برای یک نفر رد می‌شوند.",
     "whoIsWorking": "چه کسی کار می‌کند",
     "pickStaff": "یک کارمند را انتخاب کنید",
@@ -615,7 +599,6 @@
     "shiftScheduled": "نوبت کاری تنظیم شد.",
     "shiftUpdated": "نوبت کاری به‌روزرسانی شد.",
     "shiftSaveFailed": "نوبت کاری ذخیره نشد.",
-
     "sessionDescription": "یک وقت تنها در داخل نوبت کاری مربی قابل رزرو است.",
     "trainer": "مربی",
     "pickTrainer": "یک مربی را انتخاب کنید",
@@ -630,7 +613,6 @@
     "sessionBooked": "جلسه رزرو شد.",
     "sessionUpdated": "جلسه به‌روزرسانی شد.",
     "sessionSaveFailed": "جلسه ذخیره نشد.",
-
     "errorRequired": "{field} الزامی است.",
     "errorEmail": "یک ایمیل معتبر وارد کنید.",
     "errorTime": "از قالب ۲۴ ساعتهٔ HH:mm استفاده کنید.",
@@ -648,7 +630,6 @@
     "errorDurationMin": "یک پلان حداقل یک روز است.",
     "errorTooLong": "{field} بسیار طولانی است."
   },
-
   "states": {
     "errorTitle": "بارگذاری نشد",
     "errorBody": "مشکلی از سمت ما پیش آمد. لحظه‌ای بعد دوباره تلاش کنید.",
@@ -659,7 +640,6 @@
     "appErrorBody": "صفحه بارگذاری نشد. این معمولاً موقتی است — دوباره تلاش کنید، و اگر تکرار شد ممکن است دیتابیس در دسترس نباشد.",
     "reference": "کد: {digest}"
   },
-
   "styleguide": {
     "title": "راهنمای طراحی",
     "subtitle": "همهٔ توکن‌ها و اجزایی که برنامه از آن‌ها ساخته شده است. اگر چیزی ناهماهنگ شود، نخست اینجا دیده می‌شود."
