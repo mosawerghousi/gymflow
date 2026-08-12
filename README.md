@@ -5,7 +5,7 @@
 **Gym management for owners, front-desk staff, and trainers.**
 Members and check-ins · staff scheduling · reports that actually mean something.
 
-[**▶ Open the live demo**](https://gymflow-beryl.vercel.app) · [Architecture](ARCHITECTURE.md) · [Design system](DESIGN.md) · [Kiosk mode](https://gymflow-beryl.vercel.app/kiosk)
+[**▶ Open the live demo**](https://gymflow-beryl.vercel.app) · [Architecture](ARCHITECTURE.md) · [Design system](DESIGN.md) · [Readiness review](PRODUCTION-READINESS.md)
 
 </div>
 
@@ -257,14 +257,26 @@ freeze plans, drag out shifts, approve swaps, book sessions, export CSVs.
 
 | Check | Result |
 |---|---|
-| Unit tests | 46 passing |
-| End-to-end tests (against production) | 25 passing |
+| Unit tests | 57 passing |
+| End-to-end tests | 34 passing |
+| Dependency audit | 0 vulnerabilities |
 | Lighthouse — performance, desktop | **100** on every page |
 | Lighthouse — accessibility | **96–100** on every page |
 | Lighthouse — best practices | **100** on every page |
 | All three demo roles on the live URL | ✅ |
 | Check-in, shift creation, every report | ✅ |
 | Nightly demo reset | ✅ verified end to end |
+
+---
+
+## Running this for a real gym
+
+This deployment is a **public demo**, and some of what makes it a good demo makes
+it unsafe for real member data — most importantly a nightly cron that wipes the
+database, and published admin credentials.
+
+**[PRODUCTION-READINESS.md](PRODUCTION-READINESS.md)** is a full review: what was
+verified, what was fixed, and the four things that must change first.
 
 ---
 
