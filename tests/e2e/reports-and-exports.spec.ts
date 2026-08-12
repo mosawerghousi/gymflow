@@ -69,6 +69,18 @@ test.describe("reports and exports", () => {
     });
   }
 
+  test("the members CSV contains every member, not just the first page", async ({ page }) => {
+    const list = await (await page.request.get("/api/members?pageSize=1&status=all")).json();
+    const total: number = list.total;
+    expect(total).toBeGreaterThan(100);
+
+    const csv = await (await page.request.get("/api/export/csv?report=members")).text();
+    // One header row plus one row per member.
+    const rows = csv.trim().split("\r\n").length - 1;
+
+    expect(rows, `expected ${total} member rows in the export`).toBe(total);
+  });
+
   test("the iCal export is a valid calendar", async ({ page }) => {
     const from = new Date(Date.now() - 7 * 86_400_000).toISOString();
     const to = new Date(Date.now() + 14 * 86_400_000).toISOString();

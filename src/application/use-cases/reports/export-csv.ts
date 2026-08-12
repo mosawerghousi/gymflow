@@ -35,7 +35,9 @@ export function makeExportCsv(deps: ExportCsvDeps) {
 
     switch (input.report) {
       case "members": {
-        const page = await deps.members.list({ pageSize: 100, page: 1, status: "all" });
+        // Page through everyone. A single call would cap at the DTO's page size
+        // and hand back a truncated file with no indication anything was cut.
+        const all = await collectAllMembers(deps.members);
         const plans = await deps.plans.list({ includeInactive: true });
         const planNames = new Map(plans.map((plan) => [plan.id, plan.name]));
 
@@ -43,7 +45,7 @@ export function makeExportCsv(deps: ExportCsvDeps) {
           filename: `gymflow-members-${stamp}.csv`,
           content: toCsv(
             ["Member code", "Name", "Email", "Phone", "Status", "Plan", "Joined", "Expires"],
-            page.items.map((member) => [
+            all.map((member) => [
               member.code.value,
               member.fullName,
               member.email ?? "",
@@ -165,6 +167,30 @@ export function makeExportCsv(deps: ExportCsvDeps) {
       }
     }
   };
+}
+
+/** The most members a single export will walk, as a runaway guard. */
+const MAX_EXPORT_MEMBERS = 20_000;
+const EXPORT_PAGE_SIZE = 100;
+
+/**
+ * Walks every page of the member list.
+ *
+ * Exports are one of the few places a silent cap is genuinely harmful — a gym
+ * reconciling its books against a truncated file would not know.
+ */
+async function collectAllMembers(members: MemberRepository) {
+  const collected = [];
+
+  for (let page = 1; collected.length < MAX_EXPORT_MEMBERS; page += 1) {
+    const result = await members.list({ page, pageSize: EXPORT_PAGE_SIZE, status: "all" });
+
+    collected.push(...result.items);
+
+    if (collected.length >= result.total || result.items.length === 0) break;
+  }
+
+  return collected;
 }
 
 /** RFC 4180 quoting: wrap in quotes when needed, double any embedded quote. */
