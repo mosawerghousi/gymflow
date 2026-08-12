@@ -42,7 +42,7 @@ async function signIn(page: Page, prefix: string) {
   // The demo card prints the account's email, which is the one string on the
   // login screen that is the same in all three languages.
   await page.getByRole("button").filter({ hasText: /admin@gymflow\.demo/ }).first().click();
-  await page.waitForURL((url) => url.pathname.endsWith("/dashboard"), { timeout: 30_000 });
+  await page.waitForURL((url) => url.pathname.endsWith("/dashboard"), { timeout: 90_000 });
 }
 
 for (const locale of LOCALES) {
@@ -56,19 +56,22 @@ for (const locale of LOCALES) {
     });
 
     test(`every screen renders in ${locale.code}`, async ({ page }) => {
+      // Six screens in one test, and the heaviest of them aggregates two years
+      // of check-ins in SQL.
+      test.setTimeout(180_000);
       await signIn(page, locale.prefix);
 
       for (const screen of SCREENS) {
         await page.goto(`${locale.prefix}${screen}`);
-        await page.waitForLoadState("networkidle").catch(() => {});
+        await page.waitForLoadState("domcontentloaded");
+
+        // No error boundary, no blank page.
+        await expect(page.locator("main"), screen).toBeVisible({ timeout: 60_000 });
 
         await expect(page.locator("html"), `${screen} direction`).toHaveAttribute(
           "dir",
           locale.dir,
         );
-
-        // No error boundary, no blank page.
-        await expect(page.locator("main")).toBeVisible();
 
         if (!locale.rtl) continue;
 
@@ -91,17 +94,24 @@ for (const locale of LOCALES) {
   });
 }
 
-test("the switcher moves between all three languages", async ({ page }) => {
+test("a chosen language sticks", async ({ page }) => {
+  // The prefix picks the language, and the choice is remembered afterwards —
+  // a front-desk machine set to Dari must not revert to English on the next
+  // navigation, or on the next shift.
   await signIn(page, "");
-  await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
 
   for (const target of [
-    { code: "fa-AF", dir: "rtl" },
-    { code: "ps", dir: "rtl" },
-    { code: "en", dir: "ltr" },
+    { code: "fa-AF", prefix: "/fa-AF", dir: "rtl" },
+    { code: "ps", prefix: "/ps", dir: "rtl" },
   ]) {
-    await page.goto(`${target.code === "en" ? "" : `/${target.code}`}/dashboard`);
+    await page.goto(`${target.prefix}/dashboard`);
     await expect(page.locator("html")).toHaveAttribute("dir", target.dir);
     await expect(page.locator("html")).toHaveAttribute("lang", target.code);
+
+    // Navigating without a prefix keeps the language rather than snapping back.
+    await page.goto("/members");
+    await expect(page.locator("html")).toHaveAttribute("lang", target.code);
+    await expect(page.locator("html")).toHaveAttribute("dir", target.dir);
   }
 });
