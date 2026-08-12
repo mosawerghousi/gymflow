@@ -21,7 +21,8 @@ export interface NavUser {
 
 export interface NavItem {
   href: string;
-  label: string;
+  /** A key under the `nav` namespace, resolved by the rendering component. */
+  labelKey: string;
   icon: LucideIcon;
   /** Hidden unless the signed-in user holds this permission. */
   requires?: Permission;
@@ -33,42 +34,42 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   {
     href: "/dashboard",
-    label: "Dashboard",
+    labelKey: "dashboard",
     icon: LayoutDashboard,
     exact: true,
     keywords: ["home", "overview", "today"],
   },
   {
     href: "/members",
-    label: "Members",
+    labelKey: "members",
     icon: Users,
     requires: "members:read",
     keywords: ["people", "roster", "membership"],
   },
   {
     href: "/checkin",
-    label: "Check-in desk",
+    labelKey: "checkin",
     icon: ScanLine,
     requires: "checkins:write",
     keywords: ["front desk", "entry", "scan"],
   },
   {
     href: "/schedule",
-    label: "Schedule",
+    labelKey: "schedule",
     icon: CalendarRange,
     requires: "shifts:read:own",
     keywords: ["shifts", "roster", "calendar", "sessions"],
   },
   {
     href: "/reports",
-    label: "Reports",
+    labelKey: "reports",
     icon: LineChart,
     requires: "reports:read:limited",
     keywords: ["analytics", "churn", "stats", "insights"],
   },
   {
     href: "/settings",
-    label: "Settings",
+    labelKey: "settings",
     icon: Settings,
     requires: "settings:read",
     keywords: ["plans", "hours", "kiosk", "staff", "team"],
@@ -81,10 +82,11 @@ export function visibleNavItems(user: Pick<NavUser, "permissions">): NavItem[] {
   );
 }
 
-export const ROLE_LABELS: Record<UserRole, string> = {
-  admin: "Admin",
-  staff: "Front desk",
-  trainer: "Trainer",
+/** Keys under the `roles` namespace. */
+export const ROLE_KEYS: Record<UserRole, string> = {
+  admin: "admin",
+  staff: "staff",
+  trainer: "trainer",
 };
 
 /** Matches a pathname to its nav item, for the topbar title. */

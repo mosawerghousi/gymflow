@@ -1,3 +1,7 @@
+"use client";
+
+import { useTranslations } from "next-intl";
+
 import { cn } from "@/presentation/lib/utils";
 
 /**
@@ -35,18 +39,19 @@ const SOLID_TONES: Record<Tone, string> = {
   neutral: "bg-surface-3 text-muted-foreground",
 };
 
-const MEMBERSHIP: Record<string, { tone: Tone; label: string }> = {
-  active: { tone: "success", label: "Active" },
-  frozen: { tone: "warning", label: "Frozen" },
-  expired: { tone: "danger", label: "Expired" },
-  cancelled: { tone: "neutral", label: "Cancelled" },
+/** Status → tone plus the key under the `status` namespace. */
+const MEMBERSHIP: Record<string, { tone: Tone; key: string }> = {
+  active: { tone: "success", key: "active" },
+  frozen: { tone: "warning", key: "frozen" },
+  expired: { tone: "danger", key: "expired" },
+  cancelled: { tone: "neutral", key: "cancelled" },
 };
 
-const SESSION: Record<string, { tone: Tone; label: string }> = {
-  booked: { tone: "info", label: "Booked" },
-  completed: { tone: "success", label: "Completed" },
-  no_show: { tone: "danger", label: "No-show" },
-  cancelled: { tone: "neutral", label: "Cancelled" },
+const SESSION: Record<string, { tone: Tone; key: string }> = {
+  booked: { tone: "info", key: "booked" },
+  completed: { tone: "success", key: "completed" },
+  no_show: { tone: "danger", key: "noShow" },
+  cancelled: { tone: "neutral", key: "cancelled" },
 };
 
 export function StatusDot({
@@ -80,7 +85,9 @@ export function MembershipStatus({
   /** `dot` for tables and lists, `solid` where the status is the whole point. */
   variant?: "dot" | "solid";
 }) {
-  const entry = MEMBERSHIP[status] ?? { tone: "neutral" as Tone, label: status };
+  const t = useTranslations("status");
+  const entry = MEMBERSHIP[status] ?? { tone: "neutral" as Tone, key: "" };
+  const label = entry.key ? t(entry.key) : status;
 
   if (variant === "solid") {
     return (
@@ -92,7 +99,7 @@ export function MembershipStatus({
         )}
       >
         <StatusDot tone={entry.tone} />
-        {entry.label}
+        {label}
       </span>
     );
   }
@@ -101,30 +108,27 @@ export function MembershipStatus({
     <span className={cn("inline-flex items-center gap-2 text-sm", className)}>
       <StatusDot tone={entry.tone} />
       <span className={entry.tone === "neutral" ? "text-muted-foreground" : undefined}>
-        {entry.label}
+        {label}
       </span>
     </span>
   );
 }
 
 export function SessionStatus({ status, className }: { status: string; className?: string }) {
-  const entry = SESSION[status] ?? { tone: "neutral" as Tone, label: status };
+  const t = useTranslations("status");
+  const entry = SESSION[status] ?? { tone: "neutral" as Tone, key: "" };
 
   return (
     <span className={cn("inline-flex items-center gap-2 text-xs", className)}>
       <StatusDot tone={entry.tone} />
-      <span className={TEXT_TONES[entry.tone]}>{entry.label}</span>
+      <span className={TEXT_TONES[entry.tone]}>{entry.key ? t(entry.key) : status}</span>
     </span>
   );
 }
 
-const ROLE_LABELS: Record<string, string> = {
-  admin: "Admin",
-  staff: "Staff",
-  trainer: "Trainer",
-};
-
 export function RoleBadge({ role, className }: { role: string; className?: string }) {
+  const t = useTranslations("roles");
+
   return (
     <span
       className={cn(
@@ -132,7 +136,7 @@ export function RoleBadge({ role, className }: { role: string; className?: strin
         className,
       )}
     >
-      {ROLE_LABELS[role] ?? role}
+      {t(`${role}Short`)}
     </span>
   );
 }

@@ -5,7 +5,7 @@ import { cn } from "@/presentation/lib/utils";
 /**
  * Bidi isolation for Latin data inside Arabic-script text.
  *
- * A member code, email, phone number or URL is left-to-right no matter what
+ * A member code, email, phone number or URL is start-to-right no matter what
  * surrounds it. Without isolation the bidi algorithm reorders the characters
  * around neighbouring punctuation and `GF-000123` renders as `000123-GF`.
  */

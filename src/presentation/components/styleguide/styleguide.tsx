@@ -169,8 +169,8 @@ export function Styleguide() {
           <div className="space-y-1.5">
             <Label htmlFor="sg-search">With an adornment</Label>
             <div className="relative">
-              <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input id="sg-search" className="pl-9" placeholder="Search members…" />
+              <Search className="pointer-events-none absolute top-1/2 start-3 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input id="sg-search" className="ps-9" placeholder="Search members…" />
             </div>
           </div>
 

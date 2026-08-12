@@ -398,7 +398,7 @@ function KiosksPanel() {
                     <p className="truncate text-sm font-medium">
                       {token.name}
                       {token.revokedAt ? (
-                        <span className="ml-2 text-xs font-normal text-muted-foreground">
+                        <span className="ms-2 text-xs font-normal text-muted-foreground">
                           revoked
                         </span>
                       ) : null}

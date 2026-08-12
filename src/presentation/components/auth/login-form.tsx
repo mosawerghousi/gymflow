@@ -1,11 +1,14 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { signIn } from "next-auth/react";
 import { ArrowRight, Loader2, LogIn } from "lucide-react";
 import { toast } from "sonner";
 
+import { useRouter } from "@/i18n/routing";
+import { Ltr } from "@/presentation/components/i18n/bidi";
 import { Button } from "@/presentation/components/ui/button";
 import { Input } from "@/presentation/components/ui/input";
 import { Label } from "@/presentation/components/ui/label";
@@ -13,6 +16,8 @@ import { DEMO_ACCOUNTS, DEMO_PASSWORD, type DemoAccount } from "@/presentation/l
 import { cn } from "@/presentation/lib/utils";
 
 export function LoginForm() {
+  const t = useTranslations("auth");
+  const tRoles = useTranslations("roles");
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
@@ -29,12 +34,12 @@ export function LoginForm() {
     const result = await signIn("credentials", { ...credentials, redirect: false });
 
     if (!result || result.error) {
-      setError("That email and password combination did not match an account.");
+      setError(t("failed"));
       setPending(null);
       return;
     }
 
-    toast.success("Welcome back to GymFlow");
+    toast.success(t("welcomeBack"));
     startTransition(() => {
       router.push(callbackUrl);
       router.refresh();
@@ -61,14 +66,14 @@ export function LoginForm() {
         <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
           <div>
             <h2 id="demo-heading" className="text-sm font-semibold">
-              Try the demo
+              {t("demoTitle")}
             </h2>
             <p className="text-xs text-muted-foreground">
-              Pick a role — you are straight in, no typing.
+              {t("demoSubtitle")}
             </p>
           </div>
           <span className="rounded-md bg-brand-subtle px-2 py-1 text-2xs font-medium tracking-wide text-primary uppercase">
-            Live data
+            {t("demoBadge")}
           </span>
         </div>
 
@@ -80,20 +85,23 @@ export function LoginForm() {
               onClick={() => void loginAs(account)}
               disabled={busy}
               className={cn(
-                "group flex w-full items-center gap-3.5 px-4 py-3.5 text-left transition-colors duration-150",
+                "group flex w-full items-center gap-3.5 px-4 py-3.5 text-start transition-colors duration-150",
                 "hover:bg-surface-2 disabled:opacity-60",
               )}
             >
               <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-subtle text-xs font-semibold text-primary">
-                {account.label.slice(0, 2).toUpperCase()}
+                {tRoles(account.labelKey).slice(0, 2).toUpperCase()}
               </span>
 
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-medium">Login as {account.label}</span>
+                <span className="block text-sm font-medium">
+                  {t("loginAs", { role: tRoles(account.labelKey) })}
+                </span>
                 {/* The address is shown, not just implied — the spec requires the
                     credentials to be readable for anyone signing in manually. */}
                 <span className="block truncate text-xs text-muted-foreground">
-                  <span className="font-mono">{account.email}</span> · {account.blurb}
+                  {/* The address is Latin data inside RTL prose — isolate it. */}
+                  <Ltr className="font-mono">{account.email}</Ltr> · {t(account.blurbKey)}
                 </span>
               </span>
 
@@ -107,7 +115,7 @@ export function LoginForm() {
         </div>
 
         <p className="border-t border-border px-4 py-2.5 text-xs text-muted-foreground">
-          Or sign in manually — every demo account uses{" "}
+          {t("demoPasswordNote")}{" "}
           <code className="rounded bg-surface-2 px-1.5 py-0.5 font-mono text-2xs text-foreground">
             {DEMO_PASSWORD}
           </code>
@@ -123,13 +131,13 @@ export function LoginForm() {
         }}
       >
         <div className="space-y-1.5">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">{t("email")}</Label>
           <Input
             id="email"
             name="email"
             type="email"
             autoComplete="username"
-            placeholder="you@gymflow.demo"
+            placeholder={t("emailPlaceholder")}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             aria-invalid={Boolean(error)}
@@ -139,7 +147,7 @@ export function LoginForm() {
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">{t("password")}</Label>
           <Input
             id="password"
             name="password"
@@ -165,7 +173,7 @@ export function LoginForm() {
 
         <Button type="submit" size="lg" className="w-full" disabled={busy}>
           {pending === "form" ? <Loader2 className="animate-spin" /> : <LogIn />}
-          Sign in
+          {t("signIn")}
         </Button>
       </form>
     </div>

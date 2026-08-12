@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { AlertTriangle, RotateCcw } from "lucide-react";
 
+import { Link } from "@/i18n/routing";
 import { GymFlowLogo } from "@/presentation/components/brand/logo";
 import { Button } from "@/presentation/components/ui/button";
 
@@ -17,6 +19,9 @@ export default function AppError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useTranslations("states");
+  const tCommon = useTranslations("common");
+
   useEffect(() => {
     console.error("[gymflow] render error", error);
   }, [error]);
@@ -30,22 +35,21 @@ export default function AppError({
       </span>
 
       <div className="space-y-2">
-        <h1 className="text-lg font-semibold tracking-tight">Something went wrong</h1>
-        <p className="max-w-md text-sm text-muted-foreground">
-          The screen could not load. This is usually temporary — try again, and if it keeps
-          happening the database may be unreachable.
-        </p>
+        <h1 className="text-lg font-semibold tracking-tight">{t("appErrorTitle")}</h1>
+        <p className="max-w-md text-sm text-muted-foreground">{t("appErrorBody")}</p>
         {error.digest ? (
-          <p className="font-mono text-2xs text-muted-foreground">Ref: {error.digest}</p>
+          <p className="font-mono text-2xs text-muted-foreground">
+            {t("reference", { digest: error.digest })}
+          </p>
         ) : null}
       </div>
 
       <div className="flex gap-2">
         <Button onClick={reset}>
-          <RotateCcw /> Try again
+          <RotateCcw /> {tCommon("retry")}
         </Button>
         <Button variant="ghost" asChild>
-          <a href="/dashboard">Back to dashboard</a>
+          <Link href="/dashboard">{t("backToDashboard")}</Link>
         </Button>
       </div>
     </main>

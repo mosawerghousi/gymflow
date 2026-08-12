@@ -364,7 +364,7 @@ export function EntityForm<Schema extends z.ZodTypeAny>({
                         ) : (
                           <div className="relative">
                             {field.prefix ? (
-                              <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm text-muted-foreground">
+                              <span className="pointer-events-none absolute top-1/2 start-3 -translate-y-1/2 text-sm text-muted-foreground">
                                 {field.prefix}
                               </span>
                             ) : null}
@@ -387,7 +387,7 @@ export function EntityForm<Schema extends z.ZodTypeAny>({
                               aria-invalid={Boolean(error)}
                               aria-describedby={describedBy}
                               className={cn(
-                                field.prefix && "pl-7",
+                                field.prefix && "ps-7",
                                 isLocked && "font-mono text-muted-foreground",
                               )}
                               onChange={(event) => setField(field.name, event.target.value)}

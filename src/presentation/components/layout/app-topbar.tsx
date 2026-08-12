@@ -1,15 +1,16 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { signOut } from "next-auth/react";
 import { LogOut, Menu, Search } from "lucide-react";
 
+import { Link, usePathname } from "@/i18n/routing";
 import { GymFlowLogo } from "@/presentation/components/brand/logo";
+import { LanguageSwitcher } from "@/presentation/components/i18n/language-switcher";
 import { CommandPalette } from "@/presentation/components/layout/command-palette";
 import {
-  ROLE_LABELS,
+  ROLE_KEYS,
   activeNavItem,
   visibleNavItems,
   type NavUser,
@@ -41,6 +42,10 @@ import { cn } from "@/presentation/lib/utils";
  * On tablet and below it also carries the navigation, which moves into a sheet.
  */
 export function AppTopbar({ user, title }: { user: NavUser; title?: string }) {
+  const t = useTranslations("nav");
+  const tRoles = useTranslations("roles");
+  const tPalette = useTranslations("commandPalette");
+  const tCommon = useTranslations("common");
   const pathname = usePathname();
   const [isMac, setIsMac] = useState(false);
 
@@ -48,7 +53,8 @@ export function AppTopbar({ user, title }: { user: NavUser; title?: string }) {
     setIsMac(/Mac|iPhone|iPad/.test(navigator.platform));
   }, []);
 
-  const heading = title ?? activeNavItem(pathname)?.label ?? "GymFlow";
+  const active = activeNavItem(pathname);
+  const heading = title ?? (active ? t(active.labelKey) : "GymFlow");
 
   return (
     <header className="z-30 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-background px-4 sm:px-6">
@@ -66,15 +72,16 @@ export function AppTopbar({ user, title }: { user: NavUser; title?: string }) {
             new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true }),
           )
         }
-        className="hidden items-center gap-2 rounded-md border border-border bg-surface-2 py-1.5 pr-1.5 pl-2.5 text-sm text-muted-foreground transition-colors duration-150 hover:border-border-strong hover:text-foreground sm:flex"
+        className="hidden items-center gap-2 rounded-md border border-border bg-surface-2 py-1.5 pe-1.5 ps-2.5 text-sm text-muted-foreground transition-colors duration-150 hover:border-border-strong hover:text-foreground sm:flex"
       >
         <Search className="size-3.5" />
-        <span className="pr-8">Search…</span>
+        <span className="pe-8">{tPalette("trigger")}</span>
         <kbd className="rounded border border-border bg-surface-3 px-1.5 py-0.5 font-sans text-2xs text-secondary-foreground">
           {isMac ? "⌘" : "Ctrl"} K
         </kbd>
       </button>
 
+      <LanguageSwitcher />
       <ThemeToggle />
 
       <DropdownMenu>
@@ -86,7 +93,7 @@ export function AppTopbar({ user, title }: { user: NavUser; title?: string }) {
             <MemberAvatar name={user.name} size="sm" />
             {/* The avatar is aria-hidden, so the name comes from here — an
                 aria-label would clash with the visible initials. */}
-            <span className="sr-only">Account menu for {user.name}</span>
+            <span className="sr-only">{t("accountMenu", { name: user.name })}</span>
           </button>
         </DropdownMenuTrigger>
 
@@ -102,10 +109,10 @@ export function AppTopbar({ user, title }: { user: NavUser; title?: string }) {
             <div className="mt-2.5 flex items-center gap-2">
               <RoleBadge role={user.role} />
               <span className="text-xs text-muted-foreground">
-                {ROLE_LABELS[user.role]}
+                {tRoles(ROLE_KEYS[user.role])}
               </span>
               {user.isDemo ? (
-                <span className="ml-auto text-2xs text-muted-foreground uppercase">demo</span>
+                <span className="ms-auto text-2xs text-muted-foreground uppercase">{tRoles("demo")}</span>
               ) : null}
             </div>
           </DropdownMenuLabel>
@@ -114,7 +121,7 @@ export function AppTopbar({ user, title }: { user: NavUser; title?: string }) {
 
           <DropdownMenuItem onSelect={() => void signOut({ callbackUrl: "/login" })}>
             <LogOut className="size-4" />
-            Sign out
+            {tCommon("signOut")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -125,13 +132,14 @@ export function AppTopbar({ user, title }: { user: NavUser; title?: string }) {
 }
 
 function MobileNav({ user }: { user: NavUser }) {
+  const tNav = useTranslations("nav");
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Open navigation">
+        <Button variant="ghost" size="icon" className="lg:hidden" aria-label={tNav("openNavigation")}>
           <Menu className="size-5" />
         </Button>
       </SheetTrigger>
@@ -165,12 +173,12 @@ function MobileNav({ user }: { user: NavUser }) {
                 <span
                   aria-hidden
                   className={cn(
-                    "absolute top-1/2 left-0 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary",
+                    "absolute top-1/2 start-0 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary",
                     isActive ? "opacity-100" : "opacity-0",
                   )}
                 />
                 <item.icon className={cn("size-4.5", isActive && "text-primary")} />
-                {item.label}
+                {tNav(item.labelKey)}
               </Link>
             );
           })}

@@ -1,10 +1,13 @@
-import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Compass } from "lucide-react";
 
+import { Link } from "@/i18n/routing";
 import { GymFlowLogo } from "@/presentation/components/brand/logo";
 import { Button } from "@/presentation/components/ui/button";
 
 export default function NotFound() {
+  const t = useTranslations("states");
+
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center gap-6 px-6 text-center">
       <GymFlowLogo />
@@ -14,14 +17,12 @@ export default function NotFound() {
       </span>
 
       <div className="space-y-2">
-        <h1 className="text-lg font-semibold tracking-tight">That page does not exist</h1>
-        <p className="max-w-md text-sm text-muted-foreground">
-          The link may be out of date, or the record may have been removed.
-        </p>
+        <h1 className="text-lg font-semibold tracking-tight">{t("notFoundTitle")}</h1>
+        <p className="max-w-md text-sm text-muted-foreground">{t("notFoundBody")}</p>
       </div>
 
       <Button asChild>
-        <Link href="/dashboard">Back to dashboard</Link>
+        <Link href="/dashboard">{t("backToDashboard")}</Link>
       </Button>
     </main>
   );

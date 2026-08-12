@@ -126,7 +126,7 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
               : "—"}
           </p>
 
-          <Button asChild variant="ghost" size="sm" className="ml-auto">
+          <Button asChild variant="ghost" size="sm" className="ms-auto">
             <a href={`/api/export/csv?report=checkins&days=${days}`}>
               <Download /> Export CSV
             </a>
@@ -711,7 +711,7 @@ function Heatmap({ data }: { data: number[][] }) {
             key={dayIndex}
             className="mb-0.5 grid grid-cols-[2.75rem_repeat(24,minmax(0,1fr))] gap-0.5"
           >
-            <div className="pr-2 text-right text-2xs text-muted-foreground">
+            <div className="pe-2 text-end text-2xs text-muted-foreground">
               {DAY_LABELS[dayIndex]}
             </div>
             {row.map((count, hour) => (

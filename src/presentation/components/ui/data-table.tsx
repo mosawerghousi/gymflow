@@ -78,9 +78,9 @@ function TableHeaderCell({
       data-slot="table-header-cell"
       className={cn(
         "h-10 border-b border-border px-3 text-xs font-medium tracking-wide text-muted-foreground",
-        align === "right" && "text-right",
+        align === "right" && "text-end",
         align === "center" && "text-center",
-        align === "left" && "text-left",
+        align === "left" && "text-start",
         className,
       )}
       {...props}
@@ -98,7 +98,7 @@ function TableCell({
       data-slot="table-cell"
       className={cn(
         "h-11 px-3 align-middle",
-        align === "right" && "text-right",
+        align === "right" && "text-end",
         align === "center" && "text-center",
         className,
       )}

@@ -191,7 +191,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
           <CalendarDays /> Only mine
         </Button>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ms-auto flex items-center gap-2">
           <Button asChild variant="ghost" size="sm">
             <a
               href={`/api/export/ical?from=${from.toISOString()}&to=${to.toISOString()}${mineOnly ? "&mine=true" : ""}`}
@@ -238,7 +238,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
           Trainer session
         </span>
         {props.canManageShifts ? (
-          <span className="ml-auto">Drag down a column to rough out a shift.</span>
+          <span className="ms-auto">Drag down a column to rough out a shift.</span>
         ) : null}
       </div>
 
@@ -263,7 +263,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                     <div
                       key={day.toISOString()}
                       className={cn(
-                        "border-l border-border px-2 py-2.5 text-center",
+                        "border-s border-border px-2 py-2.5 text-center",
                         isToday(day) && "bg-brand-subtle",
                       )}
                     >
@@ -301,7 +301,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                     >
                       <div
                         data-numeric
-                        className="pt-1 pr-2 text-right text-2xs text-muted-foreground"
+                        className="pt-1 pe-2 text-end text-2xs text-muted-foreground"
                       >
                         {String(hour).padStart(2, "0")}:00
                       </div>
@@ -335,7 +335,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                               if (isDragging) dispatch(dragMoved(hour));
                             }}
                             className={cn(
-                              "border-l border-border transition-colors duration-150",
+                              "border-s border-border transition-colors duration-150",
                               props.canManageShifts && "cursor-cell hover:bg-surface-2",
                               // The ghost block the drag paints.
                               inDraft &&
@@ -356,7 +356,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                       style={{ top: nowMarker.top }}
                     >
                       <div className="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))]">
-                        <div className="flex items-center justify-end pr-1">
+                        <div className="flex items-center justify-end pe-1">
                           <span
                             data-numeric
                             className="rounded bg-danger px-1 py-0.5 text-2xs font-medium text-danger-foreground"
@@ -368,7 +368,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                           <div key={day.toISOString()} className="relative">
                             {index === nowMarker.dayIndex ? (
                               <div className="absolute inset-x-0 top-0 h-px bg-danger">
-                                <span className="absolute -top-1 left-0 size-2 rounded-full bg-danger" />
+                                <span className="absolute -top-1 start-0 size-2 rounded-full bg-danger" />
                               </div>
                             ) : null}
                           </div>
@@ -391,7 +391,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
 
                       return (
                         <div key={day.toISOString()} className="relative">
-                          <div className="absolute inset-y-0 left-0 right-2.5">
+                          <div className="absolute inset-y-0 start-0 end-2.5">
                             {dayShifts.map(({ item: shift, lane, lanes }) => {
                               const geometry = blockGeometry(shift.startsAt, shift.endsAt);
                               if (!geometry) return null;
@@ -410,7 +410,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                                     width: `calc(${100 / lanes}% - 4px)`,
                                   }}
                                   className={cn(
-                                    "pointer-events-auto absolute flex flex-col items-start justify-start overflow-hidden rounded-md border px-1.5 py-1 text-left text-2xs leading-tight",
+                                    "pointer-events-auto absolute flex flex-col items-start justify-start overflow-hidden rounded-md border px-1.5 py-1 text-start text-2xs leading-tight",
                                     "transition-[border-color,background-color] duration-150",
                                     POSITION_STYLES[shift.position] ?? "bg-surface-3 border-border",
                                     shift.status === "cancelled" && "opacity-40 line-through",
@@ -450,7 +450,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
                                   style={geometry}
                                   title={`PT: ${session.memberName} with ${session.trainerName} · ${formatTime(session.startsAt)}`}
                                   className={cn(
-                                    "pointer-events-auto absolute right-0.5 w-1.5 rounded-full bg-success",
+                                    "pointer-events-auto absolute end-0.5 w-1.5 rounded-full bg-success",
                                     session.status === "cancelled" && "opacity-25",
                                     session.status === "no_show" && "bg-danger",
                                   )}
@@ -738,7 +738,7 @@ function SwapResolver({
   const [coverUserId, setCoverUserId] = useState("");
 
   return (
-    <div className="flex flex-wrap items-center gap-2 pl-10">
+    <div className="flex flex-wrap items-center gap-2 ps-10">
       <Select value={coverUserId} onValueChange={setCoverUserId}>
         <SelectTrigger className="h-8 w-40 text-xs" aria-label="Choose who covers this shift">
           <SelectValue placeholder="Choose cover" />

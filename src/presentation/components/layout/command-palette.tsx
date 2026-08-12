@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/routing";
+import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import { Moon, ScanLine, Sun, UserRound } from "lucide-react";
 
+import { MemberCode } from "@/presentation/components/i18n/bidi";
 import { MemberAvatar } from "@/presentation/components/shared/member-avatar";
 import { MembershipStatus } from "@/presentation/components/shared/status-badge";
 import { visibleNavItems, type NavUser } from "@/presentation/components/layout/nav-config";
@@ -27,6 +29,9 @@ import { useLazySearchDeskQuery } from "@/presentation/store/api/checkins-api";
  * phone.
  */
 export function CommandPalette({ user }: { user: NavUser }) {
+  const t = useTranslations("commandPalette");
+  const tNav = useTranslations("nav");
+  const tRoles = useTranslations("roles");
   const router = useRouter();
   const { resolvedTheme, setTheme } = useTheme();
 
@@ -69,24 +74,24 @@ export function CommandPalette({ user }: { user: NavUser }) {
     <CommandDialog
       open={open}
       onOpenChange={setOpen}
-      title="Command palette"
-      description="Jump to a screen or find a member"
+      title={t("title")}
+      description={t("description")}
       shouldFilter={false}
     >
       <CommandInput
-        placeholder="Jump to a screen, or search members…"
+        placeholder={t("placeholder")}
         value={query}
         onValueChange={setQuery}
       />
 
       <CommandList>
         <CommandEmpty>
-          {isFetching ? "Searching…" : "Nothing matches that."}
+          {isFetching ? t("searching") : t("empty")}
         </CommandEmpty>
 
-        <CommandGroup heading="Go to">
+        <CommandGroup heading={t("goTo")}>
           {visibleNavItems(user)
-            .filter((item) => matches(query, [item.label, ...(item.keywords ?? [])]))
+            .filter((item) => matches(query, [tNav(item.labelKey), ...(item.keywords ?? [])]))
             .map((item) => (
               <CommandItem
                 key={item.href}
@@ -94,7 +99,7 @@ export function CommandPalette({ user }: { user: NavUser }) {
                 onSelect={() => run(() => router.push(item.href))}
               >
                 <item.icon className="size-4" />
-                <span>{item.label}</span>
+                <span>{tNav(item.labelKey)}</span>
               </CommandItem>
             ))}
         </CommandGroup>
@@ -102,7 +107,7 @@ export function CommandPalette({ user }: { user: NavUser }) {
         {canSearchMembers && members.length > 0 ? (
           <>
             <CommandSeparator />
-            <CommandGroup heading="Members">
+            <CommandGroup heading={t("membersGroup")}>
               {members.map((member) => (
                 <CommandItem
                   key={member.id}
@@ -111,9 +116,7 @@ export function CommandPalette({ user }: { user: NavUser }) {
                 >
                   <MemberAvatar name={member.fullName} size="xs" />
                   <span className="flex-1 truncate">{member.fullName}</span>
-                  <span className="font-mono text-2xs text-muted-foreground">
-                    {member.code}
-                  </span>
+                  <MemberCode code={member.code} className="text-2xs text-muted-foreground" />
                   <MembershipStatus status={member.status} className="text-xs" />
                 </CommandItem>
               ))}
@@ -123,11 +126,11 @@ export function CommandPalette({ user }: { user: NavUser }) {
 
         <CommandSeparator />
 
-        <CommandGroup heading="Actions">
+        <CommandGroup heading={t("actions")}>
           {user.permissions.includes("checkins:write") ? (
             <CommandItem value="check-in" onSelect={() => run(() => router.push("/checkin"))}>
               <ScanLine className="size-4" />
-              <span>Open the check-in desk</span>
+              <span>{t("openDesk")}</span>
             </CommandItem>
           ) : null}
 
@@ -142,14 +145,12 @@ export function CommandPalette({ user }: { user: NavUser }) {
             ) : (
               <Sun className="size-4" />
             )}
-            <span>Switch to {resolvedTheme === "light" ? "dark" : "light"} theme</span>
+            <span>{t("switchTheme", { theme: resolvedTheme === "light" ? "dark" : "light" })}</span>
           </CommandItem>
 
           <CommandItem value="profile" onSelect={() => run(() => router.push("/dashboard"))}>
             <UserRound className="size-4" />
-            <span>
-              Signed in as {user.name} · {user.role}
-            </span>
+            <span>{t("signedInAs", { name: user.name, role: tRoles(user.role) })}</span>
           </CommandItem>
         </CommandGroup>
       </CommandList>

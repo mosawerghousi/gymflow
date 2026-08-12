@@ -132,7 +132,7 @@ export function CheckInDesk() {
       <div className="space-y-4">
         {/* The giant, auto-focused search. */}
         <div className="relative">
-          <Search className="pointer-events-none absolute top-1/2 left-5 size-5 -translate-y-1/2 text-muted-foreground" />
+          <Search className="pointer-events-none absolute top-1/2 start-5 size-5 -translate-y-1/2 text-muted-foreground" />
           <Input
             ref={inputRef}
             autoFocus
@@ -141,17 +141,17 @@ export function CheckInDesk() {
             onKeyDown={onKeyDown}
             placeholder="Search by name, member code, email or phone…"
             aria-label="Search members to check in"
-            className="h-16 rounded-xl pl-14 text-base md:text-base"
+            className="h-16 rounded-xl ps-14 text-base md:text-base"
           />
           {isFetching ? (
-            <Loader2 className="absolute top-1/2 right-14 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+            <Loader2 className="absolute top-1/2 end-14 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
           ) : null}
           {query ? (
             <Button
               variant="ghost"
               size="icon"
               aria-label="Clear search"
-              className="absolute top-1/2 right-3 -translate-y-1/2"
+              className="absolute top-1/2 end-3 -translate-y-1/2"
               onClick={() => {
                 dispatch(deskCleared());
                 inputRef.current?.focus();
@@ -256,7 +256,7 @@ export function CheckInDesk() {
                     }
                     disabled={isCheckingIn}
                     className={cn(
-                      "relative flex w-full items-center gap-4 overflow-hidden rounded-xl border px-4 py-3.5 text-left",
+                      "relative flex w-full items-center gap-4 overflow-hidden rounded-xl border px-4 py-3.5 text-start",
                       "transition-colors duration-150",
                       index === safeIndex
                         ? "border-primary/55 bg-surface-2"

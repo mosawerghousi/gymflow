@@ -10,33 +10,35 @@ export const DEMO_PASSWORD = "demo1234";
 
 export interface DemoAccount {
   role: UserRole;
-  label: string;
+  /** Key under the `roles` namespace. */
+  labelKey: string;
   email: string;
   password: string;
-  blurb: string;
+  /** Key under the `auth` namespace. */
+  blurbKey: string;
 }
 
 export const DEMO_ACCOUNTS: readonly DemoAccount[] = [
   {
     role: "admin",
-    label: "Admin",
+    labelKey: "adminShort",
     email: "admin@gymflow.demo",
     password: DEMO_PASSWORD,
-    blurb: "Everything: members, scheduling, all reports, settings.",
+    blurbKey: "demoAdminBlurb",
   },
   {
     role: "staff",
-    label: "Staff",
+    labelKey: "staffShort",
     email: "staff@gymflow.demo",
     password: DEMO_PASSWORD,
-    blurb: "Front desk: members, check-ins, own shifts, swap requests.",
+    blurbKey: "demoStaffBlurb",
   },
   {
     role: "trainer",
-    label: "Trainer",
+    labelKey: "trainerShort",
     email: "trainer@gymflow.demo",
     password: DEMO_PASSWORD,
-    blurb: "Own schedule and sessions, mark completed or no-show.",
+    blurbKey: "demoTrainerBlurb",
   },
 ];
 

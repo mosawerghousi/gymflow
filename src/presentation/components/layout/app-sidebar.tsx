@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { MonitorSmartphone, PanelLeftClose, PanelLeftOpen, Palette } from "lucide-react";
 
+import { Link, usePathname } from "@/i18n/routing";
 import { GymFlowIcon, GymFlowLogo } from "@/presentation/components/brand/logo";
 import { visibleNavItems, type NavUser } from "@/presentation/components/layout/nav-config";
 import { Button } from "@/presentation/components/ui/button";
@@ -27,6 +27,7 @@ const COLLAPSE_KEY = "gymflow.sidebar.collapsed";
  * colour. Collapse preference survives reloads.
  */
 export function AppSidebar({ user }: { user: NavUser }) {
+  const t = useTranslations("nav");
   const pathname = usePathname();
   const dispatch = useAppDispatch();
   const isCollapsed = useAppSelector((state) => state.ui.isSidebarCollapsed);
@@ -49,7 +50,7 @@ export function AppSidebar({ user }: { user: NavUser }) {
     <aside
       data-collapsed={isCollapsed}
       className={cn(
-        "hidden h-full shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar transition-[width] duration-200 ease-[var(--ease-out-quick)] lg:flex",
+        "hidden h-full shrink-0 flex-col overflow-y-auto border-e border-sidebar-border bg-sidebar transition-[width] duration-200 ease-[var(--ease-out-quick)] lg:flex",
         isCollapsed ? "w-16" : "w-60",
       )}
     >
@@ -59,7 +60,7 @@ export function AppSidebar({ user }: { user: NavUser }) {
           isCollapsed ? "justify-center px-0" : "px-4",
         )}
       >
-        <Link href="/dashboard" aria-label="GymFlow — dashboard" className="rounded-md">
+        <Link href="/dashboard" aria-label={t("dashboard")} className="rounded-md">
           {isCollapsed ? <GymFlowIcon className="size-7" /> : <GymFlowLogo />}
         </Link>
       </div>
@@ -87,22 +88,22 @@ export function AppSidebar({ user }: { user: NavUser }) {
               <span
                 aria-hidden
                 className={cn(
-                  "absolute top-1/2 left-0 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary transition-opacity duration-150",
+                  "absolute top-1/2 start-0 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary transition-opacity duration-150",
                   isActive ? "opacity-100" : "opacity-0",
-                  isCollapsed && "left-0.5",
+                  isCollapsed && "start-0.5",
                 )}
               />
               <item.icon
                 className={cn("size-4.5 shrink-0", isActive && "text-primary")}
               />
-              {!isCollapsed ? <span className="truncate">{item.label}</span> : null}
+              {!isCollapsed ? <span className="truncate">{t(item.labelKey)}</span> : null}
             </Link>
           );
 
           return isCollapsed ? (
             <Tooltip key={item.href}>
               <TooltipTrigger asChild>{link}</TooltipTrigger>
-              <TooltipContent side="right">{item.label}</TooltipContent>
+              <TooltipContent side="right">{t(item.labelKey)}</TooltipContent>
             </Tooltip>
           ) : (
             link
@@ -113,7 +114,7 @@ export function AppSidebar({ user }: { user: NavUser }) {
           <SecondaryLink
             href="/kiosk"
             icon={MonitorSmartphone}
-            label="Kiosk mode"
+            label={t("kiosk")}
             isCollapsed={isCollapsed}
             external
           />
@@ -121,7 +122,7 @@ export function AppSidebar({ user }: { user: NavUser }) {
             <SecondaryLink
               href="/styleguide"
               icon={Palette}
-              label="Style guide"
+              label={t("styleguide")}
               isCollapsed={isCollapsed}
             />
           ) : null}
@@ -133,11 +134,11 @@ export function AppSidebar({ user }: { user: NavUser }) {
           variant="ghost"
           size={isCollapsed ? "icon" : "sm"}
           className={cn("w-full", isCollapsed ? "justify-center" : "justify-start")}
-          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-label={isCollapsed ? t("expandSidebar") : t("collapseSidebar")}
           onClick={() => dispatch(sidebarToggled(!isCollapsed))}
         >
           {isCollapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
-          {!isCollapsed ? <span>Collapse</span> : null}
+          {!isCollapsed ? <span>{t("collapse")}</span> : null}
         </Button>
       </div>
     </aside>
