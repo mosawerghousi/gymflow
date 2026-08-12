@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import {
   ArrowRight,
   CalendarClock,
@@ -11,6 +11,9 @@ import {
 } from "lucide-react";
 
 import { requireActor } from "@/composition/auth";
+import { Link } from "@/i18n/routing";
+import { MemberCode } from "@/presentation/components/i18n/bidi";
+import { formatCount, formatTime, formatWeekday } from "@/presentation/lib/format";
 import { useCases } from "@/composition/use-cases";
 import { CheckinSparkline } from "@/presentation/components/dashboard/checkin-sparkline";
 import { HeroMetric } from "@/presentation/components/dashboard/hero-metric";
@@ -29,7 +32,16 @@ import {
   CardTitle,
 } from "@/presentation/components/ui/card";
 
-export const metadata: Metadata = { title: "Dashboard" };
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "nav" });
+  return { title: t("dashboard") };
+}
+
 export const dynamic = "force-dynamic";
 
 /**
@@ -39,7 +51,18 @@ export const dynamic = "force-dynamic";
  * where the eye lands, supporting metrics run across, and everything below is
  * a shortlist that drills down on click rather than a full table on load.
  */
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+
+  const t = await getTranslations({ locale, namespace: "dashboard" });
+  const tCommon = await getTranslations({ locale, namespace: "common" });
+  const ctx = { locale };
+
   const actor = await requireActor();
   const now = new Date();
 
@@ -86,13 +109,13 @@ export default async function DashboardPage() {
   return (
     <>
       <PageHeader
-        title={`Good ${greeting(now)}, ${actor.name.split(" ")[0]}`}
-        description="Live occupancy, this week's roster, and who needs a call."
+        title={t(greetingKey(now), { name: actor.name.split(" ")[0] ?? actor.name })}
+        description={t("subtitle")}
         actions={
           actor.can("checkins:write") ? (
             <Button asChild>
               <Link href="/checkin">
-                <ScanLine /> Check-in desk
+                <ScanLine /> {t("openDesk")}
               </Link>
             </Button>
           ) : null
@@ -107,24 +130,24 @@ export default async function DashboardPage() {
           {overview ? (
             <>
               <StatCard
-                label="Active members"
-                value={overview.membership.active}
-                hint={`${overview.membership.total} on file`}
+                label={t("activeMembers")}
+                value={formatCount(overview.membership.active, ctx)}
+                hint={t("onFile", { count: formatCount(overview.membership.total, ctx) })}
                 icon={Users}
               />
               <StatCard
-                label="Sign-ups · 30d"
-                value={overview.signups.value}
+                label={t("signups30")}
+                value={formatCount(overview.signups.value, ctx)}
                 changePct={overview.signups.changePct}
-                hint="vs. previous 30 days"
+                hint={t("vsPrevious30")}
                 icon={UserPlus}
               />
             </>
           ) : (
             <StatCard
-              label="Your sessions"
+              label={t("yourSessions")}
               value={schedule.sessions.filter((s) => s.status === "booked").length}
-              hint="booked this week"
+              hint={t("bookedThisWeek")}
               icon={CalendarClock}
               className="lg:col-span-2"
             />
@@ -136,14 +159,14 @@ export default async function DashboardPage() {
           {trends ? (
             <Card className="lg:col-span-2">
               <CardHeader>
-                <CardTitle>Check-ins, last 14 days</CardTitle>
+                <CardTitle>{t("checkins14")}</CardTitle>
                 <CardDescription>
-                  {describeTrend(trends.checkins)}
+                  {describeTrend(trends.checkins, t, ctx)}
                 </CardDescription>
                 <CardAction>
                   <Button asChild variant="ghost" size="sm">
                     <Link href="/reports">
-                      Reports <ArrowRight />
+                      {t("openReports")} <ArrowRight />
                     </Link>
                   </Button>
                 </CardAction>
@@ -156,11 +179,11 @@ export default async function DashboardPage() {
 
           <Card className={trends ? "" : "lg:col-span-3"}>
             <CardHeader>
-              <CardTitle>On shift</CardTitle>
-              <CardDescription>Still to come this week.</CardDescription>
+              <CardTitle>{t("onShift")}</CardTitle>
+              <CardDescription>{t("onShiftHint")}</CardDescription>
               <CardAction>
                 <Button asChild variant="ghost" size="sm">
-                  <Link href="/schedule" aria-label="Open the schedule">
+                  <Link href="/schedule" aria-label={t("openSchedule")}>
                     <ArrowRight />
                   </Link>
                 </Button>
@@ -171,8 +194,8 @@ export default async function DashboardPage() {
                 <EmptyState
                   compact
                   icon={Clock3}
-                  title="Nothing scheduled"
-                  description="No upcoming shifts in the next seven days."
+                  title={t("nothingScheduled")}
+                  description={t("nothingScheduledHint")}
                 />
               ) : (
                 <ul className="space-y-2.5">
@@ -182,7 +205,7 @@ export default async function DashboardPage() {
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm">{shift.userName}</p>
                         <p data-numeric className="text-xs text-muted-foreground">
-                          {formatDayTime(shift.startsAt)} – {formatTime(shift.endsAt)}
+                          {formatWeekday(shift.startsAt, ctx)} {formatTime(shift.startsAt, ctx)} – {formatTime(shift.endsAt, ctx)}
                         </p>
                       </div>
                     </li>
@@ -198,16 +221,16 @@ export default async function DashboardPage() {
           <section className="grid gap-4 lg:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>Expiring soon</CardTitle>
-                <CardDescription>Active plans ending in the next two weeks.</CardDescription>
+                <CardTitle>{t("expiringSoon")}</CardTitle>
+                <CardDescription>{t("expiringSoonHint")}</CardDescription>
               </CardHeader>
               <CardContent>
                 {expiringSoon.length === 0 ? (
                   <EmptyState
                     compact
                     icon={CalendarClock}
-                    title="Nothing expiring"
-                    description="No active membership ends in the next fortnight."
+                    title={t("nothingExpiring")}
+                    description={t("nothingExpiringHint")}
                   />
                 ) : (
                   <ul className="divide-y divide-border">
@@ -221,9 +244,7 @@ export default async function DashboardPage() {
                           >
                             {member.fullName}
                           </Link>
-                          <p className="font-mono text-2xs text-muted-foreground">
-                            {member.code}
-                          </p>
+                          <MemberCode code={member.code} className="text-2xs text-muted-foreground" />
                         </div>
                         <span
                           data-numeric
@@ -234,8 +255,8 @@ export default async function DashboardPage() {
                           }
                         >
                           {member.daysUntilExpiry === 0
-                            ? "today"
-                            : `${member.daysUntilExpiry}d`}
+                            ? tCommon("today")
+                            : tCommon("daysShort", { count: formatCount(member.daysUntilExpiry ?? 0, ctx) })}
                         </span>
                       </li>
                     ))}
@@ -246,11 +267,11 @@ export default async function DashboardPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>At risk</CardTitle>
-                <CardDescription>Paid up, but no visit in 30 days.</CardDescription>
+                <CardTitle>{t("atRisk")}</CardTitle>
+                <CardDescription>{t("atRiskHint")}</CardDescription>
                 <CardAction>
                   <Button asChild variant="ghost" size="sm">
-                    <Link href="/reports" aria-label="Open reports">
+                    <Link href="/reports" aria-label={t("openReports")}>
                       <ArrowRight />
                     </Link>
                   </Button>
@@ -261,8 +282,8 @@ export default async function DashboardPage() {
                   <EmptyState
                     compact
                     icon={Users}
-                    title="Everyone is showing up"
-                    description="No active member has been away for 30 days."
+                    title={t("everyoneShowingUp")}
+                    description={t("everyoneShowingUpHint")}
                   />
                 ) : (
                   <ul className="divide-y divide-border">
@@ -279,14 +300,12 @@ export default async function DashboardPage() {
                           >
                             {member.fullName}
                           </Link>
-                          <p className="font-mono text-2xs text-muted-foreground">
-                            {member.memberCode}
-                          </p>
+                          <MemberCode code={member.memberCode} className="text-2xs text-muted-foreground" />
                         </div>
                         <span data-numeric className="shrink-0 text-xs text-muted-foreground">
                           {member.daysSinceLastVisit === null
-                            ? "never"
-                            : `${member.daysSinceLastVisit}d ago`}
+                            ? tCommon("never")
+                            : tCommon("daysAgo", { count: member.daysSinceLastVisit })}
                         </span>
                       </li>
                     ))}
@@ -301,13 +320,16 @@ export default async function DashboardPage() {
           <section>
             <Card>
               <CardHeader>
-                <CardTitle>Membership mix</CardTitle>
+                <CardTitle>{t("membershipMix")}</CardTitle>
                 <CardDescription>
-                  {overview.membership.active} of {overview.membership.total} on file are active.
+                  {t("membershipMixHint", {
+                    active: formatCount(overview.membership.active, ctx),
+                    total: formatCount(overview.membership.total, ctx),
+                  })}
                 </CardDescription>
                 <CardAction>
                   <StatCardInline
-                    label="Cancellations · 30d"
+                    label={t("cancellations30")}
                     value={overview.churn.value}
                     icon={TrendingDown}
                   />
@@ -322,7 +344,7 @@ export default async function DashboardPage() {
                   >
                     <MembershipStatus status={status} className="text-xs" />
                     <span data-numeric className="text-base font-semibold">
-                      {overview.membership[status]}
+                      {formatCount(overview.membership[status], ctx)}
                     </span>
                   </Link>
                 ))}
@@ -356,35 +378,33 @@ function StatCardInline({
 }
 
 /** The one-line insight that sits under a chart title. */
-function describeTrend(points: Array<{ count: number }>): string {
-  if (points.length < 4) return "Not enough history yet.";
+function describeTrend(
+  points: Array<{ count: number }>,
+  t: Awaited<ReturnType<typeof getTranslations<"dashboard">>>,
+  ctx: { locale: string },
+): string {
+  if (points.length < 4) return t("trendNotEnough");
 
   const half = Math.floor(points.length / 2);
   const earlier = points.slice(0, half).reduce((sum, p) => sum + p.count, 0);
   const later = points.slice(half).reduce((sum, p) => sum + p.count, 0);
-  const total = earlier + later;
+  const total = formatCount(earlier + later, ctx);
 
-  if (earlier === 0) return `${total} visits so far.`;
+  if (earlier === 0) return t("trendSteady", { total });
 
   const change = Math.round(((later - earlier) / earlier) * 100);
 
-  if (Math.abs(change) < 5) return `${total} visits, holding steady week on week.`;
+  if (Math.abs(change) < 5) return t("trendSteady", { total });
 
-  return `${total} visits — ${Math.abs(change)}% ${change > 0 ? "busier" : "quieter"} than the week before.`;
+  return t(change > 0 ? "trendBusier" : "trendQuieter", {
+    total,
+    change: formatCount(Math.abs(change), ctx),
+  });
 }
 
-function greeting(now: Date): string {
+function greetingKey(now: Date): "greetingMorning" | "greetingAfternoon" | "greetingEvening" {
   const hour = now.getUTCHours();
-  if (hour < 12) return "morning";
-  if (hour < 18) return "afternoon";
-  return "evening";
-}
-
-function formatTime(iso: string): string {
-  return new Date(iso).toISOString().slice(11, 16);
-}
-
-function formatDayTime(iso: string): string {
-  const date = new Date(iso);
-  return `${date.toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" })} ${formatTime(iso)}`;
+  if (hour < 12) return "greetingMorning";
+  if (hour < 18) return "greetingAfternoon";
+  return "greetingEvening";
 }

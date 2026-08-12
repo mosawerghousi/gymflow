@@ -3,6 +3,8 @@
 import { AlertTriangle, RotateCcw, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { useTranslations } from "next-intl";
+
 import { Button } from "@/presentation/components/ui/button";
 import { Card, CardContent } from "@/presentation/components/ui/card";
 import { Skeleton } from "@/presentation/components/ui/skeleton";
@@ -58,8 +60,8 @@ export function EmptyState({
 }
 
 export function ErrorState({
-  title = "That did not load",
-  description = "Something went wrong on our side. Try again in a moment.",
+  title,
+  description,
   onRetry,
   className,
   compact = false,
@@ -70,6 +72,9 @@ export function ErrorState({
   className?: string;
   compact?: boolean;
 }) {
+  const t = useTranslations("states");
+  const tCommon = useTranslations("common");
+
   return (
     <div
       role="alert"
@@ -84,13 +89,15 @@ export function ErrorState({
       </span>
 
       <div className="space-y-1">
-        <p className="text-sm font-medium text-foreground">{title}</p>
-        <p className="mx-auto max-w-sm text-sm text-muted-foreground">{description}</p>
+        <p className="text-sm font-medium text-foreground">{title ?? t("errorTitle")}</p>
+        <p className="mx-auto max-w-sm text-sm text-muted-foreground">
+          {description ?? t("errorBody")}
+        </p>
       </div>
 
       {onRetry ? (
         <Button variant="secondary" size="sm" onClick={onRetry} className="mt-1">
-          <RotateCcw /> Try again
+          <RotateCcw /> {tCommon("retry")}
         </Button>
       ) : null}
     </div>

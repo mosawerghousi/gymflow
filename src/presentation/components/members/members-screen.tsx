@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import {
   ChevronLeft,
   ChevronRight,
@@ -16,6 +16,9 @@ import {
 import { toast } from "sonner";
 
 import type { MemberSummaryDto } from "@/application/dto/member.dto";
+import { Link } from "@/i18n/routing";
+import { MemberCode } from "@/presentation/components/i18n/bidi";
+import { formatCount, formatDate as fmtDate } from "@/presentation/lib/format";
 import { MEMBERSHIP_STATUSES } from "@/domain/value-objects/membership-status";
 import { MemberForm } from "@/presentation/components/forms/member-form";
 import { MemberAvatar } from "@/presentation/components/shared/member-avatar";
@@ -57,9 +60,9 @@ import {
 } from "@/presentation/store/member-slice";
 
 const SORTS = [
-  { value: "recent", label: "Newest first" },
-  { value: "name", label: "Name A–Z" },
-  { value: "expiring", label: "Expiring soonest" },
+  { value: "recent", key: "sortRecent" },
+  { value: "name", key: "sortName" },
+  { value: "expiring", key: "sortExpiring" },
 ] as const;
 
 /**
@@ -70,6 +73,11 @@ const SORTS = [
  * focused.
  */
 export function MembersScreen({ canWrite }: { canWrite: boolean }) {
+  const t = useTranslations("members");
+  const tCommon = useTranslations("common");
+  const tStatus = useTranslations("status");
+  const locale = useLocale();
+  const ctx = { locale };
   const dispatch = useAppDispatch();
   const filters = useAppSelector((state) => state.members);
   const debouncedSearch = useDebounced(filters.search, 250);
@@ -101,8 +109,8 @@ export function MembersScreen({ canWrite }: { canWrite: boolean }) {
           <Input
             value={filters.search}
             onChange={(event) => dispatch(searchChanged(event.target.value))}
-            placeholder="Search members…"
-            aria-label="Search members"
+            placeholder={t("searchPlaceholder")}
+            aria-label={t("searchLabel")}
             className="ps-9"
           />
         </div>
@@ -113,14 +121,14 @@ export function MembersScreen({ canWrite }: { canWrite: boolean }) {
             dispatch(statusFilterChanged(value as (typeof MEMBERSHIP_STATUSES)[number] | "all"))
           }
         >
-          <SelectTrigger className="w-36" aria-label="Filter by status">
+          <SelectTrigger className="w-36" aria-label={t("filterStatus")}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="all">{t("allStatuses")}</SelectItem>
             {MEMBERSHIP_STATUSES.map((status) => (
-              <SelectItem key={status} value={status} className="capitalize">
-                {status}
+              <SelectItem key={status} value={status}>
+                {tStatus(status)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -130,11 +138,11 @@ export function MembersScreen({ canWrite }: { canWrite: boolean }) {
           value={filters.planId ?? "all"}
           onValueChange={(value) => dispatch(planFilterChanged(value === "all" ? null : value))}
         >
-          <SelectTrigger className="w-40" aria-label="Filter by plan">
+          <SelectTrigger className="w-40" aria-label={t("filterPlan")}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All plans</SelectItem>
+            <SelectItem value="all">{t("allPlans")}</SelectItem>
             {plans.map((plan) => (
               <SelectItem key={plan.id} value={plan.id}>
                 {plan.name}
@@ -147,14 +155,14 @@ export function MembersScreen({ canWrite }: { canWrite: boolean }) {
           value={filters.sort}
           onValueChange={(value) => dispatch(sortChanged(value as (typeof SORTS)[number]["value"]))}
         >
-          <SelectTrigger className="w-40" aria-label="Sort members">
+          <SelectTrigger className="w-40" aria-label={t("sortLabel")}>
             <SlidersHorizontal className="size-3.5 text-muted-foreground" />
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {SORTS.map((sort) => (
-              <SelectItem key={sort.value} value={sort.value}>
-                {sort.label}
+              <SelectItem key={sort.key} value={sort.value}>
+                {t(sort.key)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -162,13 +170,13 @@ export function MembersScreen({ canWrite }: { canWrite: boolean }) {
 
         {hasFilters ? (
           <Button variant="ghost" size="sm" onClick={() => dispatch(filtersCleared())}>
-            <X /> Clear
+            <X /> {tCommon("clear")}
           </Button>
         ) : null}
 
         {canWrite ? (
           <Button className="ms-auto" onClick={() => dispatch(createDialogToggled(true))}>
-            <Plus /> Add member
+            <Plus /> {t("addMember")}
           </Button>
         ) : null}
       </div>
@@ -177,8 +185,8 @@ export function MembersScreen({ canWrite }: { canWrite: boolean }) {
         <CardContent className="px-0">
           {isError ? (
             <ErrorState
-              title="The member list did not load"
-              description="The server did not answer. Your filters are still here — try again."
+              title={t("listFailed")}
+              description={t("listFailedHint")}
               onRetry={() => void refetch()}
             />
           ) : isLoading ? (
@@ -190,13 +198,13 @@ export function MembersScreen({ canWrite }: { canWrite: boolean }) {
             >
               <TableHead>
                 <TableRow>
-                  <TableHeaderCell>Member</TableHeaderCell>
-                  <TableHeaderCell>Status</TableHeaderCell>
-                  <TableHeaderCell>Plan</TableHeaderCell>
-                  <TableHeaderCell align="right">Expires</TableHeaderCell>
-                  <TableHeaderCell align="right">Last visit</TableHeaderCell>
+                  <TableHeaderCell>{t("columnMember")}</TableHeaderCell>
+                  <TableHeaderCell>{t("columnStatus")}</TableHeaderCell>
+                  <TableHeaderCell>{t("columnPlan")}</TableHeaderCell>
+                  <TableHeaderCell align="right">{t("columnExpires")}</TableHeaderCell>
+                  <TableHeaderCell align="right">{t("columnLastVisit")}</TableHeaderCell>
                   <TableHeaderCell align="right" className="w-24">
-                    <span className="sr-only">Actions</span>
+                    <span className="sr-only">{tCommon("actions")}</span>
                   </TableHeaderCell>
                 </TableRow>
               </TableHead>
@@ -214,9 +222,9 @@ export function MembersScreen({ canWrite }: { canWrite: boolean }) {
                           >
                             {member.fullName}
                           </Link>
-                          <p className="truncate font-mono text-2xs text-muted-foreground">
-                            {member.code}
-                            {member.email ? ` · ${member.email}` : ""}
+                          <p className="truncate text-2xs text-muted-foreground">
+                            <MemberCode code={member.code} />
+                            {member.email ? <> · <MemberCode code={member.email} /></> : null}
                           </p>
                         </div>
                       </div>
@@ -241,7 +249,7 @@ export function MembersScreen({ canWrite }: { canWrite: boolean }) {
                               "font-medium text-warning",
                           )}
                         >
-                          {formatDate(member.membershipEndsAt)}
+                          {fmtDate(member.membershipEndsAt, ctx)}
                         </span>
                       ) : (
                         <span className="text-muted-foreground">—</span>
@@ -249,7 +257,7 @@ export function MembersScreen({ canWrite }: { canWrite: boolean }) {
                     </TableCell>
 
                     <TableCell align="right" className="text-sm text-muted-foreground">
-                      {member.lastVisitAt ? formatRelative(member.lastVisitAt) : "never"}
+                      {member.lastVisitAt ? formatRelative(member.lastVisitAt, tCommon) : tCommon("never")}
                     </TableCell>
 
                     <TableCell align="right">
@@ -260,7 +268,7 @@ export function MembersScreen({ canWrite }: { canWrite: boolean }) {
                               <Button
                                 size="icon-sm"
                                 variant="ghost"
-                                aria-label={`Check in ${member.fullName}`}
+                                aria-label={t("checkInMember", { name: member.fullName })}
                                 onClick={async () => {
                                   try {
                                     const result = await checkIn({
@@ -280,7 +288,7 @@ export function MembersScreen({ canWrite }: { canWrite: boolean }) {
                                 <ScanLine />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent>Check in</TooltipContent>
+                            <TooltipContent>{tCommon("open")}</TooltipContent>
                           </Tooltip>
                         ) : null}
 
@@ -290,18 +298,18 @@ export function MembersScreen({ canWrite }: { canWrite: boolean }) {
                               <Button
                                 size="icon-sm"
                                 variant="ghost"
-                                aria-label={`Edit ${member.fullName}`}
+                                aria-label={t("editMember", { name: member.fullName })}
                                 onClick={() => setEditing(member)}
                               >
                                 <Pencil />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent>Edit</TooltipContent>
+                            <TooltipContent>{tCommon("edit")}</TooltipContent>
                           </Tooltip>
                         ) : null}
 
                         <Button asChild size="sm" variant="ghost">
-                          <Link href={`/members/${member.id}`}>Open</Link>
+                          <Link href={`/members/${member.id}`}>{tCommon("open")}</Link>
                         </Button>
                       </RowActions>
                     </TableCell>
@@ -312,20 +320,18 @@ export function MembersScreen({ canWrite }: { canWrite: boolean }) {
           ) : (
             <EmptyState
               icon={UserRoundPlus}
-              title={hasFilters ? "No members match those filters" : "No members yet"}
+              title={hasFilters ? t("noneMatch") : t("noneYet")}
               description={
-                hasFilters
-                  ? "Try a broader search, or clear the filters to see everyone."
-                  : "Add the first member and they will show up here."
+                hasFilters ? t("noneMatchHint") : t("noneYetHint")
               }
               action={
                 hasFilters ? (
                   <Button variant="secondary" size="sm" onClick={() => dispatch(filtersCleared())}>
-                    <X /> Clear filters
+                    <X /> {t("clearFilters")}
                   </Button>
                 ) : canWrite ? (
                   <Button size="sm" onClick={() => dispatch(createDialogToggled(true))}>
-                    <Plus /> Add member
+                    <Plus /> {t("addMember")}
                   </Button>
                 ) : undefined
               }
@@ -337,8 +343,11 @@ export function MembersScreen({ canWrite }: { canWrite: boolean }) {
       {data && data.items.length > 0 ? (
         <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
           <p data-numeric>
-            {(data.page - 1) * data.pageSize + 1}–
-            {Math.min(data.page * data.pageSize, data.total)} of {data.total}
+            {tCommon("showingRange", {
+              from: formatCount((data.page - 1) * data.pageSize + 1, ctx),
+              to: formatCount(Math.min(data.page * data.pageSize, data.total), ctx),
+              total: formatCount(data.total, ctx),
+            })}
           </p>
 
           <div className="flex items-center gap-2">
@@ -348,10 +357,13 @@ export function MembersScreen({ canWrite }: { canWrite: boolean }) {
               disabled={data.page <= 1}
               onClick={() => dispatch(pageChanged(data.page - 1))}
             >
-              <ChevronLeft /> Previous
+              <ChevronLeft /> {tCommon("previous")}
             </Button>
             <span data-numeric className="px-1">
-              {data.page} / {data.pageCount}
+              {tCommon("pageOf", {
+                page: formatCount(data.page, ctx),
+                pages: formatCount(data.pageCount, ctx),
+              })}
             </span>
             <Button
               variant="outline"
@@ -359,7 +371,7 @@ export function MembersScreen({ canWrite }: { canWrite: boolean }) {
               disabled={data.page >= data.pageCount}
               onClick={() => dispatch(pageChanged(data.page + 1))}
             >
-              Next <ChevronRight />
+              {tCommon("next")} <ChevronRight />
             </Button>
           </div>
         </div>
@@ -395,22 +407,17 @@ function useDebounced(value: string, delay: number): string {
   return debounced;
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "2-digit",
-    timeZone: "UTC",
-  });
-}
-
-function formatRelative(iso: string): string {
+/** Relative time, phrased and pluralized by the catalogue. */
+function formatRelative(
+  iso: string,
+  t: (key: string, values?: Record<string, string | number | Date>) => string,
+): string {
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
 
-  if (days <= 0) return "today";
-  if (days === 1) return "yesterday";
-  if (days < 30) return `${days}d ago`;
-  if (days < 365) return `${Math.floor(days / 30)}mo ago`;
+  if (days <= 0) return t("today");
+  if (days === 1) return t("yesterday");
+  if (days < 30) return t("daysAgo", { count: days });
+  if (days < 365) return t("monthsAgo", { count: Math.floor(days / 30) });
 
-  return `${Math.floor(days / 365)}y ago`;
+  return t("yearsAgo", { count: Math.floor(days / 365) });
 }
