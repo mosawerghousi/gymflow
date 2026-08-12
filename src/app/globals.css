@@ -94,7 +94,10 @@
   --text-4xl: 4.5rem;      /* 72 — kiosk only */
   --text-4xl--line-height: 1;
 
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  /* Latin leads; the Arabic faces sit behind it so a mixed string never breaks. */
+  --font-sans: var(--font-latin), var(--font-vazirmatn), var(--font-noto-arabic),
+    ui-sans-serif, system-ui, sans-serif;
+  --font-arabic: var(--font-arabic-primary), var(--font-latin), ui-sans-serif, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* --- Radius: one family --------------------------------------------- */
@@ -186,6 +189,52 @@
   --chart-grey-1: oklch(0.68 0.02 258);
   --chart-grey-2: oklch(0.54 0.018 258);
   --chart-grey-3: oklch(0.42 0.016 258);
+}
+
+/* --------------------------------------------------------------------------
+   Arabic script sizing
+   --------------------------------------------------------------------------
+   Arabic-script glyphs read visually smaller than Latin at the same point
+   size, and carry taller ascenders and deeper descenders. Both locales get a
+   modest size bump and extra leading rather than a different type scale, so
+   the hierarchy stays identical across languages.
+   -------------------------------------------------------------------------- */
+
+.font-arabic {
+  --font-arabic-primary: var(--font-vazirmatn);
+  font-family: var(--font-arabic);
+  font-size-adjust: 0.52;
+  --arabic-scale: 1.07;
+}
+
+/* Pashto leans on Noto Sans Arabic, which covers ټ ډ ړ ږ ښ ګ ڼ ې ۍ by design. */
+[data-locale="ps"].font-arabic {
+  --font-arabic-primary: var(--font-noto-arabic);
+}
+
+.font-arabic body,
+.font-arabic .text-xs,
+.font-arabic .text-sm,
+.font-arabic .text-base,
+.font-arabic .text-lg,
+.font-arabic .text-xl,
+.font-arabic .text-2xl {
+  font-size: calc(1em * var(--arabic-scale));
+  line-height: 1.75;
+}
+
+.font-arabic .text-2xs {
+  /* The dense table meta size stays put — bumping it breaks row rhythm. */
+  font-size: var(--text-2xs);
+  line-height: 1.5;
+}
+
+/* Latin data inside Arabic text — codes, emails, phone numbers. */
+.font-arabic [dir="ltr"],
+.font-arabic bdi,
+.font-arabic .font-mono {
+  font-family: var(--font-latin), ui-monospace, monospace;
+  font-size: 1em;
 }
 
 @layer base {

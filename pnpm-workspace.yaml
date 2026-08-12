@@ -1,11 +1,13 @@
 allowBuilds:
+  "@parcel/watcher": true
+  "@swc/core": true
+  esbuild: true
   sharp: true
   unrs-resolver: true
-  esbuild: true
 
-# Next 15.5.23 is the newest 15.x, and it still pulls vulnerable postcss and
-# sharp. Both fixes are backwards-compatible, so they are pinned here rather
-# than waiting on a Next release.
+# Next 15.5.23 is the newest 15.x and still pulls vulnerable postcss and sharp.
+# Both fixes are backwards-compatible, so they are pinned here rather than
+# waiting on a Next release.
 overrides:
   postcss: ">=8.5.26"
   sharp: ">=0.35.3"
