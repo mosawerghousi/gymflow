@@ -1,7 +1,10 @@
+import { z } from "zod";
+
 import { resolveSwapSchema } from "@/application/dto/schedule.dto";
+import { routeIdSchema } from "@/application/dto/common.dto";
 import { requireActor } from "@/composition/auth";
 import { useCases } from "@/composition/use-cases";
-import { ok, route } from "@/presentation/lib/http";
+import { ok, parseParams, route } from "@/presentation/lib/http";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +12,7 @@ type Params = { params: Promise<{ swapId: string }> };
 
 export const PATCH = route(async (request: Request, { params }: Params) => {
   const actor = await requireActor();
-  const { swapId } = await params;
+  const { swapId } = await parseParams(params, z.object({ swapId: routeIdSchema }));
   const raw = await request.json().catch(() => ({}));
   const input = resolveSwapSchema.parse({ ...raw, swapRequestId: swapId });
 

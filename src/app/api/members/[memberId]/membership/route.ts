@@ -1,8 +1,10 @@
 import { z } from "zod";
 
+import { routeIdSchema } from "@/application/dto/common.dto";
+
 import { requireActor } from "@/composition/auth";
 import { useCases } from "@/composition/use-cases";
-import { ok, parseBody, route } from "@/presentation/lib/http";
+import { ok, parseBody, parseParams, route } from "@/presentation/lib/http";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +18,7 @@ type Params = { params: Promise<{ memberId: string }> };
 /** One endpoint for every membership state change the profile screen offers. */
 export const POST = route(async (request: Request, { params }: Params) => {
   const actor = await requireActor();
-  const { memberId } = await params;
+  const { memberId } = await parseParams(params, z.object({ memberId: routeIdSchema }));
   const body = await parseBody(request, bodySchema);
 
   if (body.action === "renew") {

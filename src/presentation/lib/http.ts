@@ -93,6 +93,20 @@ export function parseQuery<Schema extends z.ZodTypeAny>(
   return schema.parse(raw);
 }
 
+/**
+ * Validates route params before they reach a use case.
+ *
+ * Without this an id like `/api/members/not-a-uuid` travels all the way to
+ * Postgres, which rejects it with a driver error and a 500 — leaking a stack
+ * trace where a 404 belongs.
+ */
+export async function parseParams<Schema extends z.ZodTypeAny>(
+  params: Promise<Record<string, string>>,
+  schema: Schema,
+): Promise<z.infer<Schema>> {
+  return schema.parse(await params);
+}
+
 export async function parseBody<Schema extends z.ZodTypeAny>(
   request: Request,
   schema: Schema,
