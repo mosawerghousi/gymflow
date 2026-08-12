@@ -49,7 +49,7 @@ export function AppSidebar({ user }: { user: NavUser }) {
     <aside
       data-collapsed={isCollapsed}
       className={cn(
-        "hidden shrink-0 flex-col border-r border-sidebar-border bg-sidebar transition-[width] duration-200 ease-[var(--ease-out-quick)] lg:flex",
+        "hidden h-full shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar transition-[width] duration-200 ease-[var(--ease-out-quick)] lg:flex",
         isCollapsed ? "w-16" : "w-60",
       )}
     >

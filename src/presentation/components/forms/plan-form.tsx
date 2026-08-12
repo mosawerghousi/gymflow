@@ -33,7 +33,7 @@ export const planFormSchema = z.object({
 export type PlanFormValues = z.infer<typeof planFormSchema>;
 
 const FIELDS: Array<FieldConfig<PlanFormValues>> = [
-  { name: "name", label: "Plan name", required: true, placeholder: "Monthly" },
+  { name: "name", label: "Plan name", required: true, placeholder: "Monthly", maxLength: 80 },
   {
     name: "price",
     label: "Price",
@@ -41,20 +41,23 @@ const FIELDS: Array<FieldConfig<PlanFormValues>> = [
     required: true,
     half: true,
     min: 0,
-    hint: "In whole currency units.",
+    prefix: "$",
   },
   {
     name: "durationDays",
-    label: "Duration (days)",
+    label: "Duration",
     kind: "number",
     required: true,
     half: true,
     min: 1,
+    hint: "In days — 30 for monthly, 365 for annual.",
   },
   {
     name: "description",
     label: "Description",
     kind: "textarea",
+    rows: 3,
+    maxLength: 500,
     placeholder: "Full access, rolling month.",
   },
 ];

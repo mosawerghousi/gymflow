@@ -35,12 +35,16 @@ export default async function DashboardLayout({
   return (
     <StoreProvider>
       <TooltipProvider delayDuration={200}>
-        <div className="flex min-h-dvh">
+        {/* A fixed viewport frame: the sidebar and topbar stay put, and the
+            content column is the only thing that scrolls. */}
+        <div className="flex h-dvh overflow-hidden">
           <AppSidebar user={navUser} />
 
-          <div className="flex min-w-0 flex-1 flex-col">
+          <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
             <AppTopbar user={navUser} />
-            <main className="min-w-0 flex-1">{children}</main>
+            <main className="min-w-0 flex-1 overflow-y-auto overscroll-contain">
+              {children}
+            </main>
           </div>
         </div>
       </TooltipProvider>

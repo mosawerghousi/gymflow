@@ -9,6 +9,8 @@ import {
   type FieldConfig,
   type FormMode,
 } from "@/presentation/components/forms/entity-form";
+import { MemberAvatar } from "@/presentation/components/shared/member-avatar";
+import { MembershipStatus } from "@/presentation/components/shared/status-badge";
 import { apiErrorMessage } from "@/presentation/store/api/base-api";
 import {
   useCreateMemberMutation,
@@ -69,23 +71,34 @@ export function MemberForm({
           {
             name: "memberCode" as const,
             label: "Member code",
+            section: "Identity",
             readOnlyInEdit: true,
-            hint: "Assigned automatically and never reused.",
+            hint: "Assigned on sign-up and never reused.",
           },
         ]
       : []),
-    { name: "firstName", label: "First name", required: true, half: true },
-    { name: "lastName", label: "Last name", required: true, half: true },
-    { name: "email", label: "Email", kind: "email", placeholder: "name@example.com" },
-    { name: "phone", label: "Phone", kind: "tel", placeholder: "+1 555 0100" },
+    { name: "firstName", label: "First name", section: "Identity", required: true, half: true, maxLength: 80 },
+    { name: "lastName", label: "Last name", section: "Identity", required: true, half: true, maxLength: 80 },
+
+    {
+      name: "email",
+      label: "Email",
+      section: "Contact",
+      kind: "email",
+      placeholder: "name@example.com",
+      hint: "Used for renewal reminders.",
+    },
+    { name: "phone", label: "Phone", section: "Contact", kind: "tel", placeholder: "+1 555 0100" },
+
     ...(mode === "create"
       ? [
           {
             name: "planId" as const,
             label: "Starting plan",
+            section: "Membership",
             kind: "select" as const,
             placeholder: "No plan yet",
-            hint: "Choosing a plan starts their term today.",
+            hint: "Choosing a plan starts their term today. You can also do this later.",
             options: plans
               .filter((plan) => plan.isActive)
               .map((plan) => ({
@@ -95,7 +108,16 @@ export function MemberForm({
           },
         ]
       : []),
-    { name: "notes", label: "Notes", kind: "textarea", placeholder: "Prefers morning sessions." },
+
+    {
+      name: "notes",
+      label: "Notes",
+      section: "Notes",
+      kind: "textarea",
+      rows: 4,
+      maxLength: 2000,
+      placeholder: "Anything the desk should know — injuries, preferences, access needs.",
+    },
   ];
 
   return (
@@ -119,6 +141,20 @@ export function MemberForm({
         phone: defaultValues?.phone,
         notes: defaultValues?.notes,
       }}
+      header={
+        mode === "edit" && defaultValues?.fullName ? (
+          <div className="flex items-center gap-3 rounded-lg border border-border bg-surface-2 px-3 py-2.5">
+            <MemberAvatar name={defaultValues.fullName} size="md" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">{defaultValues.fullName}</p>
+              <p className="font-mono text-2xs text-muted-foreground">{defaultValues.code}</p>
+            </div>
+            {defaultValues.status ? (
+              <MembershipStatus status={defaultValues.status} variant="solid" />
+            ) : null}
+          </div>
+        ) : null
+      }
       submitLabel={{ create: "Create member", edit: "Save changes" }}
       onSubmit={async (values) => {
         try {

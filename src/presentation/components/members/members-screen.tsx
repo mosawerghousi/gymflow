@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
+  Pencil,
   Plus,
   ScanLine,
   Search,
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import type { MemberSummaryDto } from "@/application/dto/member.dto";
 import { MEMBERSHIP_STATUSES } from "@/domain/value-objects/membership-status";
 import { MemberForm } from "@/presentation/components/forms/member-form";
 import { MemberAvatar } from "@/presentation/components/shared/member-avatar";
@@ -83,6 +85,9 @@ export function MembersScreen({ canWrite }: { canWrite: boolean }) {
 
   const { data: plans = [] } = useListPlansQuery();
   const [checkIn] = useCheckInMutation();
+
+  // The same MemberForm serves both modes; only the mode and the seed differ.
+  const [editing, setEditing] = useState<MemberSummaryDto | null>(null);
 
   const hasFilters =
     filters.search !== "" || filters.status !== "all" || filters.planId !== null;
@@ -279,6 +284,22 @@ export function MembersScreen({ canWrite }: { canWrite: boolean }) {
                           </Tooltip>
                         ) : null}
 
+                        {canWrite ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="icon-sm"
+                                variant="ghost"
+                                aria-label={`Edit ${member.fullName}`}
+                                onClick={() => setEditing(member)}
+                              >
+                                <Pencil />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Edit</TooltipContent>
+                          </Tooltip>
+                        ) : null}
+
                         <Button asChild size="sm" variant="ghost">
                           <Link href={`/members/${member.id}`}>Open</Link>
                         </Button>
@@ -344,11 +365,20 @@ export function MembersScreen({ canWrite }: { canWrite: boolean }) {
         </div>
       ) : null}
 
-      {/* The same MemberForm the profile uses — create mode here. */}
+      {/* One component, both modes — no create/edit twins anywhere. */}
       <MemberForm
         mode="create"
         open={filters.isCreateOpen}
         onOpenChange={(open) => dispatch(createDialogToggled(open))}
+      />
+
+      <MemberForm
+        mode="edit"
+        open={editing !== null}
+        defaultValues={editing ?? undefined}
+        onOpenChange={(open) => {
+          if (!open) setEditing(null);
+        }}
       />
     </div>
   );

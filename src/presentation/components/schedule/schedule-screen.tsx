@@ -257,7 +257,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
             <div className="overflow-x-auto">
               <div className="min-w-[64rem]">
                 {/* Day header */}
-                <div className="sticky top-14 z-10 grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] border-b border-border bg-card">
+                <div className="sticky top-0 z-10 grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] border-b border-border bg-card">
                   <div />
                   {days.map((day, index) => (
                     <div

@@ -95,7 +95,7 @@ export function ReportsScreen({ canSeeStaffHours }: { canSeeStaffHours: boolean 
   return (
     <div className="pb-10">
       {/* Global, sticky range picker — one filter, every widget. */}
-      <div className="sticky top-14 z-20 border-b border-border bg-background/90 px-5 py-3 backdrop-blur-sm sm:px-8">
+      <div className="sticky top-0 z-20 border-b border-border bg-background/95 px-5 py-3 backdrop-blur-sm sm:px-8">
         <div className="flex flex-wrap items-center gap-2">
           <div
             role="group"

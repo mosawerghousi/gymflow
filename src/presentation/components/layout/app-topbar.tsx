@@ -51,7 +51,7 @@ export function AppTopbar({ user, title }: { user: NavUser; title?: string }) {
   const heading = title ?? activeNavItem(pathname)?.label ?? "GymFlow";
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-background/85 px-4 backdrop-blur-sm sm:px-6">
+    <header className="z-30 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-background px-4 sm:px-6">
       <MobileNav user={user} />
 
       <h1 className="min-w-0 flex-1 truncate text-sm font-semibold tracking-tight">

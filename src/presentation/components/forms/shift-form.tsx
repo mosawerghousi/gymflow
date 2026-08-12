@@ -66,12 +66,13 @@ export function ShiftForm({
         label: `${member.name} · ${member.role}`,
       })),
     },
-    { name: "date", label: "Date", kind: "date", required: true },
-    { name: "startTime", label: "Starts", kind: "text", required: true, half: true, placeholder: "09:00" },
-    { name: "endTime", label: "Ends", kind: "text", required: true, half: true, placeholder: "17:00" },
+    { name: "date", label: "Date", section: "When", kind: "date", required: true },
+    { name: "startTime", label: "Starts", section: "When", kind: "text", required: true, half: true, placeholder: "09:00" },
+    { name: "endTime", label: "Ends", section: "When", kind: "text", required: true, half: true, placeholder: "17:00" },
     {
       name: "position",
       label: "Position",
+      section: "Details",
       kind: "select",
       required: true,
       options: SHIFT_POSITIONS.map((position) => ({
@@ -79,7 +80,7 @@ export function ShiftForm({
         label: SHIFT_POSITION_LABELS[position],
       })),
     },
-    { name: "notes", label: "Notes", kind: "textarea", rows: 2 },
+    { name: "notes", label: "Notes", section: "Details", kind: "textarea", rows: 3, maxLength: 500 },
   ];
 
   return (
