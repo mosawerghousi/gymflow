@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "node scripts/validate-catalogs.mjs && vitest run",
+    "test": "node scripts/validate-catalogs.mjs && node scripts/find-hardcoded-strings.mjs && vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "db:generate": "drizzle-kit generate",
